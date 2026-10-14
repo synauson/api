@@ -1,6 +1,6 @@
 # synauson API reference
 
-Package `google.protobuf`. Generated from the comments in `synauson/v1/*.proto` by
+Package `synauson.v1`. Generated from the comments in `synauson/v1/*.proto` by
 `tools/gen_api_docs.py`; edit the protos, not this file.
 
 ## Service `Syn`
@@ -31,9 +31,9 @@ Every instance also serves `SynAdmin`, for the operator, and
 
 ### StartConference
 
-`rpc StartConference(synauson.v1.StartConferenceRequest) returns (synauson.v1.StartConferenceResponse)`
+`rpc StartConference(StartConferenceRequest) returns (StartConferenceResponse)`
 
-Request: `synauson.v1.StartConferenceRequest`. Response: `synauson.v1.StartConferenceResponse`.
+Request: [`StartConferenceRequest`](#startconferencerequest). Response: [`StartConferenceResponse`](#startconferenceresponse).
 
 Starts an empty conference under the caller's id. Not retry-safe: a
 retry after a lost reply fails with `CONFERENCE_ALREADY_EXISTS`, which
@@ -41,9 +41,9 @@ then means the first call succeeded.
 
 ### TerminateConference
 
-`rpc TerminateConference(synauson.v1.TerminateConferenceRequest) returns (synauson.v1.TerminateConferenceResponse)`
+`rpc TerminateConference(TerminateConferenceRequest) returns (TerminateConferenceResponse)`
 
-Request: `synauson.v1.TerminateConferenceRequest`. Response: `synauson.v1.TerminateConferenceResponse`.
+Request: [`TerminateConferenceRequest`](#terminateconferencerequest). Response: [`TerminateConferenceResponse`](#terminateconferenceresponse).
 
 Ends a conference: removes every participant, ends every event stream
 on it, and frees its resources. A retry after a lost reply fails with
@@ -51,17 +51,17 @@ on it, and frees its resources. A retry after a lost reply fails with
 
 ### GetConference
 
-`rpc GetConference(synauson.v1.GetConferenceRequest) returns (synauson.v1.GetConferenceResponse)`
+`rpc GetConference(GetConferenceRequest) returns (GetConferenceResponse)`
 
-Request: `synauson.v1.GetConferenceRequest`. Response: `synauson.v1.GetConferenceResponse`.
+Request: [`GetConferenceRequest`](#getconferencerequest). Response: [`GetConferenceResponse`](#getconferenceresponse).
 
 Returns a conference's participants and when it started.
 
 ### GetCapabilities
 
-`rpc GetCapabilities(synauson.v1.GetCapabilitiesRequest) returns (synauson.v1.GetCapabilitiesResponse)`
+`rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse)`
 
-Request: `synauson.v1.GetCapabilitiesRequest`. Response: `synauson.v1.GetCapabilitiesResponse`.
+Request: [`GetCapabilitiesRequest`](#getcapabilitiesrequest). Response: [`GetCapabilitiesResponse`](#getcapabilitiesresponse).
 
 Returns the server and API versions, the license, its limits and
 current usage, the models' state, and this machine's speech-to-text
@@ -69,9 +69,9 @@ and text-to-speech capacity.
 
 ### AddFileParticipant
 
-`rpc AddFileParticipant(synauson.v1.AddFileParticipantRequest) returns (synauson.v1.AddFileParticipantResponse)`
+`rpc AddFileParticipant(AddFileParticipantRequest) returns (AddFileParticipantResponse)`
 
-Request: `synauson.v1.AddFileParticipantRequest`. Response: `synauson.v1.AddFileParticipantResponse`.
+Request: [`AddFileParticipantRequest`](#addfileparticipantrequest). Response: [`AddFileParticipantResponse`](#addfileparticipantresponse).
 
 Adds a participant that plays an audio file into the conference. Not
 retry-safe: a retry after a lost reply fails with
@@ -79,9 +79,9 @@ retry-safe: a retry after a lost reply fails with
 
 ### AddRecordingParticipant
 
-`rpc AddRecordingParticipant(synauson.v1.AddRecordingParticipantRequest) returns (synauson.v1.AddRecordingParticipantResponse)`
+`rpc AddRecordingParticipant(AddRecordingParticipantRequest) returns (AddRecordingParticipantResponse)`
 
-Request: `synauson.v1.AddRecordingParticipantRequest`. Response: `synauson.v1.AddRecordingParticipantResponse`.
+Request: [`AddRecordingParticipantRequest`](#addrecordingparticipantrequest). Response: [`AddRecordingParticipantResponse`](#addrecordingparticipantresponse).
 
 Adds a participant that records another participant's audio, and
 whatever is routed to it, to a WAV file. Not retry-safe, as
@@ -89,9 +89,9 @@ whatever is routed to it, to a WAV file. Not retry-safe, as
 
 ### RemoveParticipant
 
-`rpc RemoveParticipant(synauson.v1.RemoveParticipantRequest) returns (synauson.v1.RemoveParticipantResponse)`
+`rpc RemoveParticipant(RemoveParticipantRequest) returns (RemoveParticipantResponse)`
 
-Request: `synauson.v1.RemoveParticipantRequest`. Response: `synauson.v1.RemoveParticipantResponse`.
+Request: [`RemoveParticipantRequest`](#removeparticipantrequest). Response: [`RemoveParticipantResponse`](#removeparticipantresponse).
 
 Removes a participant, or releases a SIP reservation. Its routes and
 event streams end with it. A retry after a lost reply fails with
@@ -99,36 +99,36 @@ event streams end with it. A retry after a lost reply fails with
 
 ### MuteParticipant
 
-`rpc MuteParticipant(synauson.v1.MuteParticipantRequest) returns (synauson.v1.MuteParticipantResponse)`
+`rpc MuteParticipant(MuteParticipantRequest) returns (MuteParticipantResponse)`
 
-Request: `synauson.v1.MuteParticipantRequest`. Response: `synauson.v1.MuteParticipantResponse`.
+Request: [`MuteParticipantRequest`](#muteparticipantrequest). Response: [`MuteParticipantResponse`](#muteparticipantresponse).
 
 Mutes or unmutes everything a participant sends to the others.
 Retry-safe: it sets the mute, so repeating it changes nothing.
 
 ### SetAudioRoutes
 
-`rpc SetAudioRoutes(synauson.v1.SetAudioRoutesRequest) returns (synauson.v1.SetAudioRoutesResponse)`
+`rpc SetAudioRoutes(SetAudioRoutesRequest) returns (SetAudioRoutesResponse)`
 
-Request: `synauson.v1.SetAudioRoutesRequest`. Response: `synauson.v1.SetAudioRoutesResponse`.
+Request: [`SetAudioRoutesRequest`](#setaudioroutesrequest). Response: [`SetAudioRoutesResponse`](#setaudioroutesresponse).
 
 Replaces the conference's whole routing matrix: who hears whom.
 Retry-safe: the same matrix sent again changes nothing.
 
 ### AddPriorityAudioFiles
 
-`rpc AddPriorityAudioFiles(synauson.v1.AddPriorityAudioFilesRequest) returns (synauson.v1.AddPriorityAudioFilesResponse)`
+`rpc AddPriorityAudioFiles(AddPriorityAudioFilesRequest) returns (AddPriorityAudioFilesResponse)`
 
-Request: `synauson.v1.AddPriorityAudioFilesRequest`. Response: `synauson.v1.AddPriorityAudioFilesResponse`.
+Request: [`AddPriorityAudioFilesRequest`](#addpriorityaudiofilesrequest). Response: [`AddPriorityAudioFilesResponse`](#addpriorityaudiofilesresponse).
 
 Queues audio files to play on a file participant ahead of its own
 file. Not retry-safe: a retry queues the files again.
 
 ### StreamFileEvents
 
-`rpc StreamFileEvents(synauson.v1.StreamFileEventsRequest) returns (stream synauson.v1.FileEvent)`
+`rpc StreamFileEvents(StreamFileEventsRequest) returns (stream FileEvent)`
 
-Request: `synauson.v1.StreamFileEventsRequest`. Response: a stream of `synauson.v1.FileEvent`.
+Request: [`StreamFileEventsRequest`](#streamfileeventsrequest). Response: a stream of [`FileEvent`](#fileevent).
 
 Streams a file participant's playback events (or every file
 participant's, with an empty `participant_id`), from the subscription
@@ -136,36 +136,36 @@ on.
 
 ### StreamVadEvents
 
-`rpc StreamVadEvents(synauson.v1.StreamVadEventsRequest) returns (stream synauson.v1.VadEvent)`
+`rpc StreamVadEvents(StreamVadEventsRequest) returns (stream VadEvent)`
 
-Request: `synauson.v1.StreamVadEventsRequest`. Response: a stream of `synauson.v1.VadEvent`.
+Request: [`StreamVadEventsRequest`](#streamvadeventsrequest). Response: a stream of [`VadEvent`](#vadevent).
 
 Streams a participant's voice activity events. Needs
 `DetectorConfig.vad` on the participant.
 
 ### StreamTurnDetectionEvents
 
-`rpc StreamTurnDetectionEvents(synauson.v1.StreamTurnDetectionEventsRequest) returns (stream synauson.v1.TurnDetectionEvent)`
+`rpc StreamTurnDetectionEvents(StreamTurnDetectionEventsRequest) returns (stream TurnDetectionEvent)`
 
-Request: `synauson.v1.StreamTurnDetectionEventsRequest`. Response: a stream of `synauson.v1.TurnDetectionEvent`.
+Request: [`StreamTurnDetectionEventsRequest`](#streamturndetectioneventsrequest). Response: a stream of [`TurnDetectionEvent`](#turndetectionevent).
 
 Streams a participant's turn detection decisions. Needs
 `DetectorConfig.turn_detection` on the participant.
 
 ### StreamTranscriptEvents
 
-`rpc StreamTranscriptEvents(synauson.v1.StreamTranscriptEventsRequest) returns (stream synauson.v1.TranscriptEvent)`
+`rpc StreamTranscriptEvents(StreamTranscriptEventsRequest) returns (stream TranscriptEvent)`
 
-Request: `synauson.v1.StreamTranscriptEventsRequest`. Response: a stream of `synauson.v1.TranscriptEvent`.
+Request: [`StreamTranscriptEventsRequest`](#streamtranscripteventsrequest). Response: a stream of [`TranscriptEvent`](#transcriptevent).
 
 Streams a participant's transcript. Needs `DetectorConfig.stt` on the
 participant.
 
 ### StreamAgentEvents
 
-`rpc StreamAgentEvents(synauson.v1.StreamAgentEventsRequest) returns (stream synauson.v1.AgentEvent)`
+`rpc StreamAgentEvents(StreamAgentEventsRequest) returns (stream AgentEvent)`
 
-Request: `synauson.v1.StreamAgentEventsRequest`. Response: a stream of `synauson.v1.AgentEvent`.
+Request: [`StreamAgentEventsRequest`](#streamagenteventsrequest). Response: a stream of [`AgentEvent`](#agentevent).
 
 Streams a participant's voice-agent events: speech, turns, words and
 playback, in one ordered stream that can be resumed. Needs
@@ -173,27 +173,27 @@ playback, in one ordered stream that can be resumed. Needs
 
 ### ForceEndTurn
 
-`rpc ForceEndTurn(synauson.v1.ForceEndTurnRequest) returns (synauson.v1.ForceEndTurnResponse)`
+`rpc ForceEndTurn(ForceEndTurnRequest) returns (ForceEndTurnResponse)`
 
-Request: `synauson.v1.ForceEndTurnRequest`. Response: `synauson.v1.ForceEndTurnResponse`.
+Request: [`ForceEndTurnRequest`](#forceendturnrequest). Response: [`ForceEndTurnResponse`](#forceendturnresponse).
 
 Ends the participant's open turn now (reason MANUAL). Not retry-safe: a
 retry may end the turn that started after the first call.
 
 ### UpdateTurnConfig
 
-`rpc UpdateTurnConfig(synauson.v1.UpdateTurnConfigRequest) returns (synauson.v1.UpdateTurnConfigResponse)`
+`rpc UpdateTurnConfig(UpdateTurnConfigRequest) returns (UpdateTurnConfigResponse)`
 
-Request: `synauson.v1.UpdateTurnConfigRequest`. Response: `synauson.v1.UpdateTurnConfigResponse`.
+Request: [`UpdateTurnConfigRequest`](#updateturnconfigrequest). Response: [`UpdateTurnConfigResponse`](#updateturnconfigresponse).
 
 Changes how the participant's turns end and returns the config in
 effect. Retry-safe: the same update sent again changes nothing.
 
 ### Speak
 
-`rpc Speak(synauson.v1.SpeakRequest) returns (synauson.v1.SpeakResponse)`
+`rpc Speak(SpeakRequest) returns (SpeakResponse)`
 
-Request: `synauson.v1.SpeakRequest`. Response: `synauson.v1.SpeakResponse`.
+Request: [`SpeakRequest`](#speakrequest). Response: [`SpeakResponse`](#speakresponse).
 
 Starts or continues an utterance on the participant's speaker. Needs
 `DetectorConfig.tts` on the participant. Not retry-safe: a retried
@@ -201,18 +201,18 @@ Speak whose first call reached the speaker speaks its text twice.
 
 ### CancelUtterance
 
-`rpc CancelUtterance(synauson.v1.CancelUtteranceRequest) returns (synauson.v1.CancelUtteranceResponse)`
+`rpc CancelUtterance(CancelUtteranceRequest) returns (CancelUtteranceResponse)`
 
-Request: `synauson.v1.CancelUtteranceRequest`. Response: `synauson.v1.CancelUtteranceResponse`.
+Request: [`CancelUtteranceRequest`](#cancelutterancerequest). Response: [`CancelUtteranceResponse`](#cancelutteranceresponse).
 
 Stops an utterance (or every interruptible one) now. Retry-safe: an
 utterance already stopped is not stopped again.
 
 ### AddSipParticipant
 
-`rpc AddSipParticipant(synauson.v1.AddSipParticipantRequest) returns (synauson.v1.AddSipParticipantResponse)`
+`rpc AddSipParticipant(AddSipParticipantRequest) returns (AddSipParticipantResponse)`
 
-Request: `synauson.v1.AddSipParticipantRequest`. Response: `synauson.v1.AddSipParticipantResponse`.
+Request: [`AddSipParticipantRequest`](#addsipparticipantrequest). Response: [`AddSipParticipantResponse`](#addsipparticipantresponse).
 
 Adds a SIP call's media as a participant, once both sides' media are
 known. Synauson handles RTP only; the caller does the SIP signalling.
@@ -220,35 +220,35 @@ Not retry-safe, as `AddFileParticipant`.
 
 ### SendDtmf
 
-`rpc SendDtmf(synauson.v1.SendDtmfRequest) returns (synauson.v1.SendDtmfResponse)`
+`rpc SendDtmf(SendDtmfRequest) returns (SendDtmfResponse)`
 
-Request: `synauson.v1.SendDtmfRequest`. Response: `synauson.v1.SendDtmfResponse`.
+Request: [`SendDtmfRequest`](#senddtmfrequest). Response: [`SendDtmfResponse`](#senddtmfresponse).
 
 Sends a DTMF digit to a SIP participant's peer. Not retry-safe: a retry
 sends the digit again.
 
 ### StreamDtmfEvents
 
-`rpc StreamDtmfEvents(synauson.v1.StreamDtmfEventsRequest) returns (stream synauson.v1.DtmfEvent)`
+`rpc StreamDtmfEvents(StreamDtmfEventsRequest) returns (stream DtmfEvent)`
 
-Request: `synauson.v1.StreamDtmfEventsRequest`. Response: a stream of `synauson.v1.DtmfEvent`.
+Request: [`StreamDtmfEventsRequest`](#streamdtmfeventsrequest). Response: a stream of [`DtmfEvent`](#dtmfevent).
 
 Streams the DTMF digits a SIP participant's peer sends, from the
 subscription on.
 
 ### GetSipStats
 
-`rpc GetSipStats(synauson.v1.GetSipStatsRequest) returns (synauson.v1.GetSipStatsResponse)`
+`rpc GetSipStats(GetSipStatsRequest) returns (GetSipStatsResponse)`
 
-Request: `synauson.v1.GetSipStatsRequest`. Response: `synauson.v1.GetSipStatsResponse`.
+Request: [`GetSipStatsRequest`](#getsipstatsrequest). Response: [`GetSipStatsResponse`](#getsipstatsresponse).
 
 Returns a SIP participant's RTP receive statistics.
 
 ### ReserveSipParticipant
 
-`rpc ReserveSipParticipant(synauson.v1.ReserveSipParticipantRequest) returns (synauson.v1.ReserveSipParticipantResponse)`
+`rpc ReserveSipParticipant(ReserveSipParticipantRequest) returns (ReserveSipParticipantResponse)`
 
-Request: `synauson.v1.ReserveSipParticipantRequest`. Response: `synauson.v1.ReserveSipParticipantResponse`.
+Request: [`ReserveSipParticipantRequest`](#reservesipparticipantrequest). Response: [`ReserveSipParticipantResponse`](#reservesipparticipantresponse).
 
 Reserves the local ports for an outbound call's SDP offer, the first
 step of a two-phase add; `ConnectSipParticipant` is the second. Not
@@ -256,9 +256,9 @@ retry-safe: a retry fails with `PARTICIPANT_ALREADY_EXISTS`.
 
 ### ConnectSipParticipant
 
-`rpc ConnectSipParticipant(synauson.v1.ConnectSipParticipantRequest) returns (synauson.v1.ConnectSipParticipantResponse)`
+`rpc ConnectSipParticipant(ConnectSipParticipantRequest) returns (ConnectSipParticipantResponse)`
 
-Request: `synauson.v1.ConnectSipParticipantRequest`. Response: `synauson.v1.ConnectSipParticipantResponse`.
+Request: [`ConnectSipParticipantRequest`](#connectsipparticipantrequest). Response: [`ConnectSipParticipantResponse`](#connectsipparticipantresponse).
 
 Starts a participant reserved by `ReserveSipParticipant`, with the
 media the peer's SDP answer negotiated. Not retry-safe: a retry fails
@@ -266,9 +266,9 @@ with `PARTICIPANT_ALREADY_EXISTS`.
 
 ### AddWebRtcParticipant
 
-`rpc AddWebRtcParticipant(synauson.v1.AddWebRtcParticipantRequest) returns (synauson.v1.AddWebRtcParticipantResponse)`
+`rpc AddWebRtcParticipant(AddWebRtcParticipantRequest) returns (AddWebRtcParticipantResponse)`
 
-Request: `synauson.v1.AddWebRtcParticipantRequest`. Response: `synauson.v1.AddWebRtcParticipantResponse`.
+Request: [`AddWebRtcParticipantRequest`](#addwebrtcparticipantrequest). Response: [`AddWebRtcParticipantResponse`](#addwebrtcparticipantresponse).
 
 Adds a WebRTC peer (a browser, say) as a participant: sends its SDP
 offer, returns synauson's answer. Not retry-safe: a retry fails with
@@ -277,27 +277,27 @@ participant and add it again.
 
 ### AddWebRtcIceCandidate
 
-`rpc AddWebRtcIceCandidate(synauson.v1.AddWebRtcIceCandidateRequest) returns (synauson.v1.AddWebRtcIceCandidateResponse)`
+`rpc AddWebRtcIceCandidate(AddWebRtcIceCandidateRequest) returns (AddWebRtcIceCandidateResponse)`
 
-Request: `synauson.v1.AddWebRtcIceCandidateRequest`. Response: `synauson.v1.AddWebRtcIceCandidateResponse`.
+Request: [`AddWebRtcIceCandidateRequest`](#addwebrtcicecandidaterequest). Response: [`AddWebRtcIceCandidateResponse`](#addwebrtcicecandidateresponse).
 
 Passes one of the peer's ICE candidates to synauson (trickle ICE).
 Retry-safe: a candidate added twice is used once.
 
 ### StreamWebRtcIceCandidates
 
-`rpc StreamWebRtcIceCandidates(synauson.v1.StreamWebRtcIceCandidatesRequest) returns (stream synauson.v1.WebRtcIceCandidate)`
+`rpc StreamWebRtcIceCandidates(StreamWebRtcIceCandidatesRequest) returns (stream WebRtcIceCandidate)`
 
-Request: `synauson.v1.StreamWebRtcIceCandidatesRequest`. Response: a stream of `synauson.v1.WebRtcIceCandidate`.
+Request: [`StreamWebRtcIceCandidatesRequest`](#streamwebrtcicecandidatesrequest). Response: a stream of [`WebRtcIceCandidate`](#webrtcicecandidate).
 
 Streams synauson's own ICE candidates for the peer: those found before
 the subscription, then new ones as they are found.
 
 ### GetWebRtcStats
 
-`rpc GetWebRtcStats(synauson.v1.GetWebRtcStatsRequest) returns (synauson.v1.GetWebRtcStatsResponse)`
+`rpc GetWebRtcStats(GetWebRtcStatsRequest) returns (GetWebRtcStatsResponse)`
 
-Request: `synauson.v1.GetWebRtcStatsRequest`. Response: `synauson.v1.GetWebRtcStatsResponse`.
+Request: [`GetWebRtcStatsRequest`](#getwebrtcstatsrequest). Response: [`GetWebRtcStatsResponse`](#getwebrtcstatsresponse).
 
 Returns a WebRTC participant's connection state and the options it
 runs with.
@@ -311,9 +311,9 @@ to the operator's tools, not to agents. Errors carry an `ErrorInfo`, as
 
 ### ShutdownServer
 
-`rpc ShutdownServer(synauson.v1.ShutdownServerRequest) returns (synauson.v1.ShutdownServerResponse)`
+`rpc ShutdownServer(ShutdownServerRequest) returns (ShutdownServerResponse)`
 
-Request: `synauson.v1.ShutdownServerRequest`. Response: `synauson.v1.ShutdownServerResponse`.
+Request: [`ShutdownServerRequest`](#shutdownserverrequest). Response: [`ShutdownServerResponse`](#shutdownserverresponse).
 
 Terminates every conference, then stops the server. Returns at once;
 the drain runs in the background. From the call on, health reports
@@ -322,111 +322,12 @@ Retry-safe: a second call while the drain runs changes nothing.
 
 ### GetResourceSnapshot
 
-`rpc GetResourceSnapshot(synauson.v1.GetResourceSnapshotRequest) returns (synauson.v1.GetResourceSnapshotResponse)`
+`rpc GetResourceSnapshot(GetResourceSnapshotRequest) returns (GetResourceSnapshotResponse)`
 
-Request: `synauson.v1.GetResourceSnapshotRequest`. Response: `synauson.v1.GetResourceSnapshotResponse`.
+Request: [`GetResourceSnapshotRequest`](#getresourcesnapshotrequest). Response: [`GetResourceSnapshotResponse`](#getresourcesnapshotresponse).
 
 Returns the server's memory, threads and conferences now, for
 monitoring.
-
-## google/protobuf/timestamp.proto
-
-### Timestamp
-
-A Timestamp represents a point in time independent of any time zone or local
-calendar, encoded as a count of seconds and fractions of seconds at
-nanosecond resolution. The count is relative to an epoch at UTC midnight on
-January 1, 1970, in the proleptic Gregorian calendar which extends the
-Gregorian calendar backwards to year one.
-
-All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-second table is needed for interpretation, using a [24-hour linear
-smear](https://developers.google.com/time/smear).
-
-The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-restricting to that range, we ensure that we can convert to and from [RFC
-3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-
-# Examples
-
-Example 1: Compute Timestamp from POSIX `time()`.
-
-    Timestamp timestamp;
-    timestamp.set_seconds(time(NULL));
-    timestamp.set_nanos(0);
-
-Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-
-    Timestamp timestamp;
-    timestamp.set_seconds(tv.tv_sec);
-    timestamp.set_nanos(tv.tv_usec * 1000);
-
-Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-
-    // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-    // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-    Timestamp timestamp;
-    timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-    timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-
-Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-
-    long millis = System.currentTimeMillis();
-
-    Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-        .setNanos((int) ((millis % 1000) * 1000000)).build();
-
-Example 5: Compute Timestamp from Java `Instant.now()`.
-
-    Instant now = Instant.now();
-
-    Timestamp timestamp =
-        Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-            .setNanos(now.getNano()).build();
-
-Example 6: Compute Timestamp from current time in Python.
-
-    timestamp = Timestamp()
-    timestamp.GetCurrentTime()
-
-# JSON Mapping
-
-In JSON format, the Timestamp type is encoded as a string in the
-[RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-where {year} is always expressed using four digits while {month}, {day},
-{hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-is required. A proto3 JSON serializer should always use UTC (as indicated by
-"Z") when printing the Timestamp type and a proto3 JSON parser should be
-able to accept both UTC and other timezones (as indicated by an offset).
-
-For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-01:30 UTC on January 15, 2017.
-
-In JavaScript, one can convert a Date object to this format using the
-standard
-[toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-method. In Python, a standard `datetime.datetime` object can be converted
-to this format using
-[`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-the Joda Time's [`ISODateTimeFormat.dateTime()`](
-http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-) to obtain a formatter capable of generating timestamps in this format.
-
-| Field | Number | Type | Description |
-|---|---|---|---|
-| `seconds` | 1 | `int64` | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be between -315576000000 and 315576000000 inclusive (which corresponds to 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z). |
-| `nanos` | 2 | `int32` | Non-negative fractions of a second at nanosecond resolution. This field is the nanosecond portion of the duration, not an alternative to seconds. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be between 0 and 999,999,999 inclusive. |
 
 ## synauson/v1/admin.proto
 
@@ -452,7 +353,7 @@ A resource snapshot.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `snapshot` | 1 | `synauson.v1.ResourceSnapshot` | What the server uses now. |
+| `snapshot` | 1 | [`ResourceSnapshot`](#resourcesnapshot) | What the server uses now. |
 
 ### ResourceSnapshot
 
@@ -460,11 +361,11 @@ What the server uses at one moment.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `capture_time` | 1 | [`Timestamp`](#timestamp) | When it was taken. |
-| `process_memory` | 2 | `synauson.v1.ProcessMemory` | The server process's memory and threads. |
-| `runtime_stats` | 3 | `synauson.v1.RuntimeStats` | The server's own thread pools. |
-| `cgroup_memory` | 4 | `synauson.v1.CgroupMemory` | The memory limit and usage of the control group the server runs in. |
-| `conferences` | 5 | repeated `synauson.v1.ConferenceInfo` | Each running conference, in no particular order; at most the operator's conference cap, when one is set. |
+| `capture_time` | 1 | `google.protobuf.Timestamp` | When it was taken. |
+| `process_memory` | 2 | [`ProcessMemory`](#processmemory) | The server process's memory and threads. |
+| `runtime_stats` | 3 | [`RuntimeStats`](#runtimestats) | The server's own thread pools. |
+| `cgroup_memory` | 4 | [`CgroupMemory`](#cgroupmemory) | The memory limit and usage of the control group the server runs in. |
+| `conferences` | 5 | repeated [`ConferenceInfo`](#conferenceinfo) | Each running conference, in no particular order; at most the operator's conference cap, when one is set. |
 
 ### ProcessMemory
 
@@ -493,7 +394,7 @@ The memory limit and usage of the server's control group (Linux).
 |---|---|---|---|
 | `limit_bytes` | 1 | optional `int64` | The smallest memory limit on the control group or any ancestor, in bytes; absent when there is none. |
 | `used_bytes` | 2 | optional `int64` | Memory the control group uses now, in bytes; absent when unreadable. |
-| `version` | 3 | `synauson.v1.CgroupVersion` | The interface read. May gain values: accept ones you don't know. |
+| `version` | 3 | [`CgroupVersion`](#cgroupversion) | The interface read. May gain values: accept ones you don't know. |
 
 ### ConferenceInfo
 
@@ -571,24 +472,24 @@ turns and utterances by them. Other cases may be added.
 | `participant_id` | 2 | `string` | The participant the event is about. |
 | `stream_id` | 3 | `int64` | Names the participant's stream. A participant added again under the same id gets a new `stream_id`, and its seqs start again from 1. |
 | `seq` | 4 | `int64` | Strictly increasing from 1 over stored events. `AgentSubscribed` and `AgentHeartbeat` aren't stored: they repeat the last seq this subscription has (the cursor, for `AgentSubscribed`). |
-| `event_time` | 5 | [`Timestamp`](#timestamp) | Wall-clock time the event was made. |
-| `subscribed` | 10 | oneof event: `synauson.v1.AgentSubscribed` | First on every subscription. |
-| `heartbeat` | 11 | oneof event: `synauson.v1.AgentHeartbeat` | Nothing else happened for the heartbeat interval. |
-| `error` | 12 | oneof event: `synauson.v1.AgentError` | A recoverable problem; the stream goes on. |
-| `stream_ended` | 13 | oneof event: `synauson.v1.AgentStreamEnded` | Last on the stream. |
-| `speech_started` | 20 | oneof event: `synauson.v1.AgentSpeechStarted` | Voice activity detection heard speech start. |
-| `speech_stopped` | 21 | oneof event: `synauson.v1.AgentSpeechStopped` | Voice activity detection heard the speech stop. |
-| `turn_started` | 22 | oneof event: `synauson.v1.AgentTurnStarted` | A turn started. |
-| `turn_words` | 23 | oneof event: `synauson.v1.AgentTurnWords` | More of the open turn's words. |
-| `eager_end_of_turn` | 24 | oneof event: `synauson.v1.AgentEagerEndOfTurn` | The open turn may have ended at a pause. |
-| `turn_resumed` | 25 | oneof event: `synauson.v1.AgentTurnResumed` | The turn's last eager end of turn was premature. |
-| `end_of_turn` | 26 | oneof event: `synauson.v1.AgentEndOfTurn` | A turn ended. |
-| `turn_config_updated` | 27 | oneof event: `synauson.v1.AgentTurnConfigUpdated` | UpdateTurnConfig changed the turn config. |
-| `utterance_started` | 40 | oneof event: `synauson.v1.AgentUtteranceStarted` | An utterance's first sample played. |
-| `words_played` | 41 | oneof event: `synauson.v1.AgentWordsPlayed` | More of an utterance's words fully played. |
-| `utterance_done` | 42 | oneof event: `synauson.v1.AgentUtteranceDone` | An utterance played to its end. |
-| `utterance_interrupted` | 43 | oneof event: `synauson.v1.AgentUtteranceInterrupted` | An utterance stopped before its end. |
-| `utterance_failed` | 44 | oneof event: `synauson.v1.AgentUtteranceFailed` | An utterance failed. |
+| `event_time` | 5 | `google.protobuf.Timestamp` | Wall-clock time the event was made. |
+| `subscribed` | 10 | oneof event: [`AgentSubscribed`](#agentsubscribed) | First on every subscription. |
+| `heartbeat` | 11 | oneof event: [`AgentHeartbeat`](#agentheartbeat) | Nothing else happened for the heartbeat interval. |
+| `error` | 12 | oneof event: [`AgentError`](#agenterror) | A recoverable problem; the stream goes on. |
+| `stream_ended` | 13 | oneof event: [`AgentStreamEnded`](#agentstreamended) | Last on the stream. |
+| `speech_started` | 20 | oneof event: [`AgentSpeechStarted`](#agentspeechstarted) | Voice activity detection heard speech start. |
+| `speech_stopped` | 21 | oneof event: [`AgentSpeechStopped`](#agentspeechstopped) | Voice activity detection heard the speech stop. |
+| `turn_started` | 22 | oneof event: [`AgentTurnStarted`](#agentturnstarted) | A turn started. |
+| `turn_words` | 23 | oneof event: [`AgentTurnWords`](#agentturnwords) | More of the open turn's words. |
+| `eager_end_of_turn` | 24 | oneof event: [`AgentEagerEndOfTurn`](#agenteagerendofturn) | The open turn may have ended at a pause. |
+| `turn_resumed` | 25 | oneof event: [`AgentTurnResumed`](#agentturnresumed) | The turn's last eager end of turn was premature. |
+| `end_of_turn` | 26 | oneof event: [`AgentEndOfTurn`](#agentendofturn) | A turn ended. |
+| `turn_config_updated` | 27 | oneof event: [`AgentTurnConfigUpdated`](#agentturnconfigupdated) | UpdateTurnConfig changed the turn config. |
+| `utterance_started` | 40 | oneof event: [`AgentUtteranceStarted`](#agentutterancestarted) | An utterance's first sample played. |
+| `words_played` | 41 | oneof event: [`AgentWordsPlayed`](#agentwordsplayed) | More of an utterance's words fully played. |
+| `utterance_done` | 42 | oneof event: [`AgentUtteranceDone`](#agentutterancedone) | An utterance played to its end. |
+| `utterance_interrupted` | 43 | oneof event: [`AgentUtteranceInterrupted`](#agentutteranceinterrupted) | An utterance stopped before its end. |
+| `utterance_failed` | 44 | oneof event: [`AgentUtteranceFailed`](#agentutterancefailed) | An utterance failed. |
 
 `oneof event`: What happened. Clients must ignore cases they don't know.
 
@@ -601,7 +502,7 @@ First on every subscription.
 | `oldest_seq` | 1 | `int64` | The oldest event the stream still keeps, 0 when it keeps none. |
 | `last_seq` | 2 | `int64` | The stream's newest seq when the subscription started, 0 before its first event. |
 | `stt` | 3 | `bool` | Whether speech-to-text runs on the participant. |
-| `turn_config` | 4 | `synauson.v1.TurnConfig` | The turn config in effect. |
+| `turn_config` | 4 | [`TurnConfig`](#turnconfig) | The turn config in effect. |
 | `tts` | 5 | `bool` | Whether the participant has a speaker (text-to-speech). |
 | `voice` | 6 | optional `string` | The speaker's default voice, when it has one. |
 
@@ -633,7 +534,7 @@ Last on the stream; the RPC then completes.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `reason` | 1 | `synauson.v1.AgentStreamEndReason` | Why the stream ended. |
+| `reason` | 1 | [`AgentStreamEndReason`](#agentstreamendreason) | Why the stream ended. |
 
 ### AgentSpeechStarted
 
@@ -684,7 +585,7 @@ exactly its AgentEndOfTurn's words.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `turn_id` | 1 | `int64` | The open turn's id. |
-| `words` | 2 | repeated `synauson.v1.Word` | The words, in order. |
+| `words` | 2 | repeated [`Word`](#word) | The words, in order. |
 | `stt_backlog_ms` | 3 | optional `int64` | Audio waiting to be transcribed (a duration), when speech-to-text reported it. |
 
 ### Word
@@ -718,10 +619,10 @@ it would have.
 |---|---|---|---|
 | `turn_id` | 1 | `int64` | The open turn's id. |
 | `text` | 2 | `string` | Its words joined by single spaces; empty without speech-to-text. |
-| `words` | 3 | repeated `synauson.v1.Word` | The turn's words up to the pause: those sent in AgentTurnWords so far, then the rest, which may include words forecast but not yet committed. Empty without speech-to-text. |
+| `words` | 3 | repeated [`Word`](#word) | The turn's words up to the pause: those sent in AgentTurnWords so far, then the rest, which may include words forecast but not yet committed. Empty without speech-to-text. |
 | `speech_end_ms` | 4 | `int64` | Where the pause's speech ended (the voice activity detector's speech end). |
 | `probability` | 5 | optional `float` | Turn detection's probability for the pause, when the eager end came on its decision; unset when it came at the speech end (eager_threshold 0). |
-| `latency` | 6 | `synauson.v1.TurnLatency` | How long it took; drain_ms is how long speech-to-text took for the text, from the pause becoming eager. |
+| `latency` | 6 | [`TurnLatency`](#turnlatency) | How long it took; drain_ms is how long speech-to-text took for the text, from the pause becoming eager. |
 
 ### AgentTurnResumed
 
@@ -731,7 +632,7 @@ its text no longer stands. At most one per AgentEagerEndOfTurn.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `turn_id` | 1 | `int64` | The open turn's id. |
-| `cause` | 2 | `synauson.v1.TurnResumeCause` | What took the eager end back. |
+| `cause` | 2 | [`TurnResumeCause`](#turnresumecause) | What took the eager end back. |
 | `at_ms` | 3 | `int64` | SPEECH: where it restarted (the voice activity detector's speech start). WORDS: when the first word that differs was emitted, or when the turn ended if its AgentEndOfTurn is what differs. |
 
 ### AgentEndOfTurn
@@ -745,14 +646,14 @@ turn before it (STREAM_ENDED when there was none).
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `turn_id` | 1 | `int64` | The turn's id. |
-| `reason` | 2 | `synauson.v1.TurnEndReason` | Why it ended. |
+| `reason` | 2 | [`TurnEndReason`](#turnendreason) | Why it ended. |
 | `text` | 3 | `string` | Its words joined by single spaces: the turn's TurnTranscript text without its leading space when speech-to-text runs; empty otherwise. |
-| `words` | 4 | repeated `synauson.v1.Word` | The turn's words, in order; empty without speech-to-text. |
+| `words` | 4 | repeated [`Word`](#word) | The turn's words, in order; empty without speech-to-text. |
 | `start_ms` | 5 | `int64` | Where the turn's speech started, as in its AgentTurnStarted. |
 | `speech_end_ms` | 6 | `int64` | Where the turn's speech ended: the voice activity detector's last speech end, or when the turn ended if the participant was still speaking; a late turn's last word's end. |
 | `probability` | 7 | optional `float` | Turn detection's probability for the turn's last pause, when it decided. |
 | `complete` | 8 | `bool` | False when the text may lack the turn's last words: speech-to-text ran out of drain time, or stopped, first. |
-| `latency` | 9 | `synauson.v1.TurnLatency` | How long the end of turn took. |
+| `latency` | 9 | [`TurnLatency`](#turnlatency) | How long the end of turn took. |
 
 ### TurnLatency
 
@@ -795,7 +696,7 @@ UpdateTurnConfig changed the turn config.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `config` | 1 | `synauson.v1.TurnConfig` | The config now in effect. |
+| `config` | 1 | [`TurnConfig`](#turnconfig) | The config now in effect. |
 
 ### ForceEndTurnRequest
 
@@ -835,7 +736,7 @@ config is unchanged), `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
 |---|---|---|---|
 | `conference_id` | 1 | `string` | Required. The participant's conference. |
 | `participant_id` | 2 | `string` | Required. The participant whose turn config to change. |
-| `update` | 3 | `synauson.v1.TurnConfigUpdate` | The changes; unset changes nothing. |
+| `update` | 3 | [`TurnConfigUpdate`](#turnconfigupdate) | The changes; unset changes nothing. |
 
 ### UpdateTurnConfigResponse
 
@@ -843,7 +744,7 @@ The turn config after UpdateTurnConfig.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `config` | 1 | `synauson.v1.TurnConfig` | The config now in effect. |
+| `config` | 1 | [`TurnConfig`](#turnconfig) | The config now in effect. |
 | `seq` | 2 | `int64` | The seq of the `AgentTurnConfigUpdated` event that announced it. |
 
 ### SpeakRequest
@@ -869,7 +770,7 @@ finished, was interrupted or failed).
 | `participant_id` | 2 | `string` | Required. The participant whose speaker speaks. |
 | `utterance_id` | 3 | `string` | Required. Chosen by the caller, an id as `Syn` describes; every playback event echoes it. A new id starts an utterance; a used one continues it until it ends. |
 | `text` | 4 | `string` | More of the utterance's text, as written: the speaker normalizes it, so numbers, money, dates and codes are read as a person would. At most 16 KiB of UTF-8 per Speak, 64 KiB per utterance. |
-| `release` | 5 | `synauson.v1.SpeakRelease` | What this text ends; unset is `SPEAK_RELEASE_NONE`. |
+| `release` | 5 | [`SpeakRelease`](#speakrelease) | What this text ends; unset is `SPEAK_RELEASE_NONE`. |
 | `interruptible` | 6 | optional `bool` | Only on an utterance's first Speak. Whether CancelUtterance may stop it (default true). |
 | `preemptible` | 7 | optional `bool` | Only on an utterance's first Speak. Whether the next new utterance stops it, reason PREEMPTED (default false). |
 | `voice` | 8 | optional `string` | Only on an utterance's first Speak: a voice instead of the speaker's default (TtsConfig.voice). |
@@ -908,7 +809,7 @@ AgentUtteranceInterrupted is on the stream before this response.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `cancelled` | 1 | repeated `synauson.v1.CancelledUtterance` | Each utterance canceled, in order. Empty when the utterance had already finished, or none was speaking. |
+| `cancelled` | 1 | repeated [`CancelledUtterance`](#cancelledutterance) | Each utterance canceled, in order. Empty when the utterance had already finished, or none was speaking. |
 
 ### CancelledUtterance
 
@@ -951,7 +852,7 @@ AgentUtteranceFailed.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `utterance_id` | 1 | `string` | The utterance's id. |
-| `words` | 2 | repeated `synauson.v1.PlayedWord` | The words, in order. |
+| `words` | 2 | repeated [`PlayedWord`](#playedword) | The words, in order. |
 
 ### PlayedWord
 
@@ -983,7 +884,7 @@ An utterance stopped before its end; nothing more of it plays.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `utterance_id` | 1 | `string` | The utterance's id. |
-| `reason` | 2 | `synauson.v1.UtteranceInterruptReason` | Why it stopped. |
+| `reason` | 2 | [`UtteranceInterruptReason`](#utteranceinterruptreason) | Why it stopped. |
 | `heard_text` | 3 | `string` | The text up to the end of its last fully played word, as sent. |
 | `heard_text_end` | 4 | `int64` | `heard_text`'s length in Unicode code points (not UTF-16 units, see `PlayedWord.text_start`): where the unheard text starts. |
 | `heard_ms` | 5 | `int64` | How much of its audio played (a duration), partly heard words included. |
@@ -995,7 +896,7 @@ An utterance failed; nothing more of it plays.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `utterance_id` | 1 | `string` | The utterance's id. |
-| `code` | 2 | `synauson.v1.UtteranceFailure` | Why it failed. |
+| `code` | 2 | [`UtteranceFailure`](#utterancefailure) | Why it failed. |
 | `message` | 3 | `string` | What happened, for people. Don't match on it. |
 
 ### AgentStreamEndReason
@@ -1084,19 +985,19 @@ values in later releases: clients must accept values they don't know.
 |---|---|---|---|
 | `server_version` | 14 | `string` | The server's release, as semantic versioning ("1.8.0"). |
 | `api_version` | 15 | `string` | The release of this API (the synauson/api tag, as "1.0.0") the server implements. A client built from a newer release may find RPCs that fail with UNIMPLEMENTED and fields the server never sets. |
-| `license` | 1 | `synauson.v1.LicenseInfo` | The license in force and its standing. |
-| `limits_scope` | 2 | `synauson.v1.LimitsScope` | What the license's limits count over. |
+| `license` | 1 | [`LicenseInfo`](#licenseinfo) | The license in force and its standing. |
+| `limits_scope` | 2 | [`LimitsScope`](#limitsscope) | What the license's limits count over. |
 | `overdraft` | 3 | `double` | Fraction above the purchased part of each limit (sessions and conferences alike) still admitted as a burst, reported as overage. |
-| `capabilities` | 6 | repeated `synauson.v1.CapabilityInfo` | Each capability a license can grant, and whether new work may use it. |
-| `models` | 7 | repeated `synauson.v1.ModelInfo` | Each model the license entitles, or could, and its state on this instance. |
-| `onnx_runtime` | 8 | `synauson.v1.OnnxRuntimeInfo` | The ONNX Runtime library every model runs on. |
-| `stt` | 9 | `synauson.v1.SttCapacityInfo` | This machine's speech-to-text capacity and its pool. |
-| `sessions` | 10 | `synauson.v1.PoolUsage` | The license's pool of concurrent AI sessions: participants using any AI capability, one session each. |
-| `resources` | 11 | `synauson.v1.ResourcesInfo` | What this instance may use, detected at startup: its CPU budget, cores, CPU features and memory limit, with their sources. |
-| `calibration` | 12 | `synauson.v1.CalibrationInfo` | The calibration cache (model timings kept in the state directory across restarts) and the voice activity and turn detection timings in force. Speech-to-text's are in stt. |
-| `tts` | 13 | `synauson.v1.TtsCapacityInfo` | This machine's text-to-speech pool and its cap on speaking utterances. |
-| `usage_service` | 16 | `synauson.v1.UsageServiceInfo` | This instance's standing with the usage service: its share of each of the license's pools and the time it has left to reconnect. |
-| `conferences` | 17 | `synauson.v1.PoolUsage` | The license's pool of concurrent conferences: every conference, with or without AI, from its start until it ends. Both pools apply: a conference takes one conference, and each participant in it using AI takes one AI session too. |
+| `capabilities` | 6 | repeated [`CapabilityInfo`](#capabilityinfo) | Each capability a license can grant, and whether new work may use it. |
+| `models` | 7 | repeated [`ModelInfo`](#modelinfo) | Each model the license entitles, or could, and its state on this instance. |
+| `onnx_runtime` | 8 | [`OnnxRuntimeInfo`](#onnxruntimeinfo) | The ONNX Runtime library every model runs on. |
+| `stt` | 9 | [`SttCapacityInfo`](#sttcapacityinfo) | This machine's speech-to-text capacity and its pool. |
+| `sessions` | 10 | [`PoolUsage`](#poolusage) | The license's pool of concurrent AI sessions: participants using any AI capability, one session each. |
+| `resources` | 11 | [`ResourcesInfo`](#resourcesinfo) | What this instance may use, detected at startup: its CPU budget, cores, CPU features and memory limit, with their sources. |
+| `calibration` | 12 | [`CalibrationInfo`](#calibrationinfo) | The calibration cache (model timings kept in the state directory across restarts) and the voice activity and turn detection timings in force. Speech-to-text's are in stt. |
+| `tts` | 13 | [`TtsCapacityInfo`](#ttscapacityinfo) | This machine's text-to-speech pool and its cap on speaking utterances. |
+| `usage_service` | 16 | [`UsageServiceInfo`](#usageserviceinfo) | This instance's standing with the usage service: its share of each of the license's pools and the time it has left to reconnect. |
+| `conferences` | 17 | [`PoolUsage`](#poolusage) | The license's pool of concurrent conferences: every conference, with or without AI, from its start until it ends. Both pools apply: a conference takes one conference, and each participant in it using AI takes one AI session too. |
 
 ### UsageServiceInfo
 
@@ -1109,15 +1010,15 @@ calls in progress are never stopped.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `contact` | 1 | `synauson.v1.UsageContact` | Its contact with the service. |
-| `last_contact_time` | 2 | [`Timestamp`](#timestamp) | The last contact the 7 days count from: the newest report the service accepted, moved forward while Synauson's own outage notice is up. Unset for an air-gapped license. |
-| `grace_end_time` | 3 | [`Timestamp`](#timestamp) | When new calls stop unless a report gets through first. Unset for an air-gapped license. |
+| `contact` | 1 | [`UsageContact`](#usagecontact) | Its contact with the service. |
+| `last_contact_time` | 2 | `google.protobuf.Timestamp` | The last contact the 7 days count from: the newest report the service accepted, moved forward while Synauson's own outage notice is up. Unset for an air-gapped license. |
+| `grace_end_time` | 3 | `google.protobuf.Timestamp` | When new calls stop unless a report gets through first. Unset for an air-gapped license. |
 | `share` | 4 | optional `int32` | This instance's share of the license's sessions, while leased; absent when unlimited or not leased. |
 | `share_ceiling` | 5 | optional `int32` | The most sessions this instance may hold: its share plus the burst on the purchased part of it (the Free base has none). |
 | `pool_in_use` | 6 | optional `int32` | Sessions in use across all the license's instances at the last report. |
 | `instances` | 7 | optional `int32` | Instances holding a share at the last report. |
-| `pause_time` | 8 | [`Timestamp`](#timestamp) | Since when Synauson's signed notice says the usage service itself is down: the 7 days are paused until it is cleared. Unset otherwise. |
-| `refuse_time` | 9 | [`Timestamp`](#timestamp) | Since when the usage service refuses this license's reports (the licensing server refused it): the 7 days run from no later than this. Unset otherwise. |
+| `pause_time` | 8 | `google.protobuf.Timestamp` | Since when Synauson's signed notice says the usage service itself is down: the 7 days are paused until it is cleared. Unset otherwise. |
+| `refuse_time` | 9 | `google.protobuf.Timestamp` | Since when the usage service refuses this license's reports (the licensing server refused it): the 7 days run from no later than this. Unset otherwise. |
 | `problem` | 10 | optional `string` | Why the last report failed. |
 | `conference_share` | 11 | optional `int32` | This instance's share of the license's conferences, while leased; absent when unlimited or not leased. An instance that holds no share, leased or kept from its last lease, starts no conference, unless the conference pool is unlimited or the license air-gapped. |
 | `conference_share_ceiling` | 12 | optional `int32` | The most conferences this instance may hold: its share plus the burst on the purchased part of it (the Free base has none). |
@@ -1131,8 +1032,8 @@ The calibration cache and the detector timings in force.
 |---|---|---|---|
 | `file` | 1 | optional `string` | The cache file in the state directory; absent when the server runs without one. |
 | `recalibrate` | 2 | `bool` | Whether this start ignores the cached timings (the operator asked to recalibrate). |
-| `vad` | 3 | `synauson.v1.DetectorTiming` | One voice activity chunk (32 ms of audio), once timed. |
-| `turn_detection` | 4 | `synauson.v1.DetectorTiming` | One turn detection decision, once timed. |
+| `vad` | 3 | [`DetectorTiming`](#detectortiming) | One voice activity chunk (32 ms of audio), once timed. |
+| `turn_detection` | 4 | [`DetectorTiming`](#detectortiming) | One turn detection decision, once timed. |
 
 ### DetectorTiming
 
@@ -1143,7 +1044,7 @@ How long one detector run takes on this machine.
 | `model` | 1 | `string` | The model timed, by its catalog id. |
 | `threads` | 2 | `int32` | The inference threads it ran on. |
 | `run_ms` | 3 | `double` | How long one run took, in ms (a duration). |
-| `source` | 4 | `synauson.v1.ValueSource` | AUTO (measured on this start) or CACHED (on an earlier one, read from the calibration cache). |
+| `source` | 4 | [`ValueSource`](#valuesource) | AUTO (measured on this start) or CACHED (on an earlier one, read from the calibration cache). |
 
 ### ResourcesInfo
 
@@ -1152,7 +1053,7 @@ What this instance may use, detected at startup.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `cpu_budget` | 1 | `double` | Cores this instance may use, fractional with a CPU quota: the smallest of the control group's CPU quota (its own and its ancestors'), its CPU set, the process's CPU affinity, a Windows job's hard CPU cap and the CPU count, or the operator's override. |
-| `cpu_source` | 2 | `synauson.v1.ValueSource` | AUTO (detected) or OVERRIDE (set by the operator). |
+| `cpu_source` | 2 | [`ValueSource`](#valuesource) | AUTO (detected) or OVERRIDE (set by the operator). |
 | `limited_by` | 3 | `string` | What set the budget: "cpu_max" (a control group CPU quota), "cpuset", "affinity", "job_cpu_rate" (a Windows job object's CPU cap), "std_parallelism" (the CPU count) or "override". Others may be added. |
 | `cores` | 4 | `int32` | Whole cores the model pools size by: the budget rounded down, at least 1. |
 | `logical_cpus` | 5 | `int32` | Logical CPUs this instance may run on. |
@@ -1161,7 +1062,7 @@ What this instance may use, detected at startup.
 | `cpu_model` | 8 | `string` | The processor's model name. |
 | `cpu_flags` | 9 | repeated `string` | The instruction set extensions the inference kernels are picked by: "avx2", "avx512f", "avx512vnni", "avxvnni", "amx_tile", "amx_int8"; on ARM64 "dotprod", "i8mm", "bf16". Others may be added. |
 | `memory_limit_bytes` | 10 | optional `int64` | The memory limit (the control group's, a Windows job's, or the operator's override), in bytes; absent with none. |
-| `memory_source` | 11 | `synauson.v1.ValueSource` | AUTO (detected) or OVERRIDE (set by the operator). |
+| `memory_source` | 11 | [`ValueSource`](#valuesource) | AUTO (detected) or OVERRIDE (set by the operator). |
 
 ### LicenseInfo
 
@@ -1169,16 +1070,16 @@ The license in force and its standing.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `state` | 1 | `synauson.v1.LicenseState` | The standing. |
+| `state` | 1 | [`LicenseState`](#licensestate) | The standing. |
 | `description` | 2 | `string` | One line describing the license and its state, for people. |
 | `license_id` | 3 | optional `string` | The license's id, when there is a license. |
 | `display_name` | 4 | optional `string` | The license's name, for people, when it has one. |
-| `source` | 5 | optional `synauson.v1.LicenseSource` | Where the license file came from, when there is one; absent when no license file is in force (rejected). Unlike `plan`, this field has no value in some states, so it keeps presence; LICENSE_SOURCE_UNSPECIFIED is still never sent. |
-| `file_expire_time` | 6 | [`Timestamp`](#timestamp) | When the license file in use stops being valid offline. |
-| `license_expire_time` | 7 | [`Timestamp`](#timestamp) | The license's own expiry, if it has one. |
+| `source` | 5 | optional [`LicenseSource`](#licensesource) | Where the license file came from, when there is one; absent when no license file is in force (rejected). Unlike `plan`, this field has no value in some states, so it keeps presence; LICENSE_SOURCE_UNSPECIFIED is still never sent. |
+| `file_expire_time` | 6 | `google.protobuf.Timestamp` | When the license file in use stops being valid offline. |
+| `license_expire_time` | 7 | `google.protobuf.Timestamp` | The license's own expiry, if it has one. |
 | `days_remaining` | 9 | optional `int32` | Whole days until the license expires, or (while LICENSE_STATE_OFFLINE) until new calls stop without contact. |
 | `problem` | 10 | optional `string` | What needs attention: a refused renewal, a failing license check, or why new work is refused. |
-| `plan` | 11 | `synauson.v1.LicensePlan` | The plan the license is on now; always set. FREE once a Free or paid license expires; still DEVELOPER once a developer license expires; the license's own plan while it is disconnected (`state` says nothing new starts); UNLICENSED when no license is in force (rejected). |
+| `plan` | 11 | [`LicensePlan`](#licenseplan) | The plan the license is on now; always set. FREE once a Free or paid license expires; still DEVELOPER once a developer license expires; the license's own plan while it is disconnected (`state` says nothing new starts); UNLICENSED when no license is in force (rejected). |
 
 Reserved (removed, never reused): number 8.
 
@@ -1196,9 +1097,9 @@ are never stopped; a new one past the limit and its burst is refused
 | `limit` | 1 | optional `int32` | The Free base plus the purchased units; absent means unlimited. |
 | `in_use` | 2 | `int32` | Units in use now on this instance. |
 | `ceiling` | 3 | optional `int32` | The most admitted at once: the base plus the purchased units and their overdraft (the burst applies to purchased units only); absent when unlimited. |
-| `level` | 4 | `synauson.v1.PoolLevel` | How close the units in use are to the limit. |
+| `level` | 4 | [`PoolLevel`](#poollevel) | How close the units in use are to the limit. |
 | `peak` | 5 | `int32` | The most units at once since the server started, for true-up. |
-| `peak_time` | 6 | [`Timestamp`](#timestamp) | When the peak was first reached; unset before the first unit. |
+| `peak_time` | 6 | `google.protobuf.Timestamp` | When the peak was first reached; unset before the first unit. |
 | `base` | 7 | `int32` | The Free base every license has in this pool, with no burst (the Free plan's sessions, with every AI feature, or its conferences); 0 while the license starts nothing new. |
 | `purchased` | 8 | optional `int32` | Units bought on top of the base; absent means unlimited. |
 
@@ -1231,7 +1132,7 @@ the background, so a model can be missing for a while after a start.
 | `id` | 1 | `string` | The model's catalog id. |
 | `variant` | 2 | `string` | The model's variant: the build or quantization the server picked for this machine ("cpu", "int8", "fp32"), which is also its directory in the model store. A machine of another kind may get another variant of the same model. Others may be added. |
 | `release` | 3 | `string` | The model's version: its release, as the catalog numbers it. |
-| `state` | 4 | `synauson.v1.ModelState` | Its state. A failed download stays MISSING or INVALID, with the error and the retry time in `detail`. |
+| `state` | 4 | [`ModelState`](#modelstate) | Its state. A failed download stays MISSING or INVALID, with the error and the retry time in `detail`. |
 | `detail` | 5 | optional `string` | Why it is in that state, when it isn't ready. |
 
 ### OnnxRuntimeInfo
@@ -1240,7 +1141,7 @@ The ONNX Runtime library the server loaded; every model runs on it.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `state` | 1 | `synauson.v1.OnnxRuntimeState` | Whether the library loaded. |
+| `state` | 1 | [`OnnxRuntimeState`](#onnxruntimestate) | Whether the library loaded. |
 | `version` | 2 | optional `string` | The loaded library's version. |
 | `path` | 3 | optional `string` | The file it was loaded from, when the platform reports it. |
 | `shipped_version` | 4 | `string` | The release synauson ships and tests. Another version runs, but model speed and outputs can differ. |
@@ -1255,18 +1156,18 @@ Each speech-to-text participant also takes a license session.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `state` | 1 | `synauson.v1.PoolState` | The pool's state; participants with `stt` need it READY. |
+| `state` | 1 | [`PoolState`](#poolstate) | The pool's state; participants with `stt` need it READY. |
 | `workers` | 2 | optional `int32` | Decoding workers in the pool, once known. |
 | `threads_per_worker` | 3 | optional `int32` | Inference threads each worker uses, once known. |
 | `real_time_factor` | 4 | optional `double` | One stream's decode time over audio time, when measured. |
-| `streams` | 5 | `synauson.v1.Usage` | The stream cap (once known) and the streams in use. |
+| `streams` | 5 | [`Usage`](#usage) | The stream cap (once known) and the streams in use. |
 | `detail` | 6 | optional `string` | Why it is idle, or failed. |
 | `model_bytes` | 8 | optional `int64` | Private memory each worker's model adds, in bytes, when measured (Linux). Model weights shared through the model store are paid once, not per worker, and are not counted here: they are shared_model_bytes. |
 | `limited_by` | 9 | optional `string` | What set the worker count: "cpu", "memory" or "operator". Others may be added. |
 | `turn_flush` | 10 | `bool` | Whether turns close early on forecasts of their last words (the turn flush, set by the operator). |
 | `forecast_reserve` | 11 | optional `double` | Decoding the stream cap reserves per stream for forecasts (the turn flush's and eager end of turn's, at most one per pause), as a share of the stream's own: 0 when both are off or the model can't forecast; absent when not calibrated. |
 | `shared_model_bytes` | 12 | optional `int64` | Memory of the model weights shared through the model store, in bytes, when measured (Linux): paid once by every worker and every instance on the host using the same store, so the pool's model memory is about workers x model_bytes + shared_model_bytes. 0 when the weights load privately into each worker. |
-| `source` | 13 | optional `synauson.v1.ValueSource` | Where the capacity came from: AUTO (timed on this start), CACHED (every timing read from the calibration cache) or OVERRIDE (all set by the operator); absent until the capacity is known. It keeps presence for that state; VALUE_SOURCE_UNSPECIFIED is still never sent. |
+| `source` | 13 | optional [`ValueSource`](#valuesource) | Where the capacity came from: AUTO (timed on this start), CACHED (every timing read from the calibration cache) or OVERRIDE (all set by the operator); absent until the capacity is known. It keeps presence for that state; VALUE_SOURCE_UNSPECIFIED is still never sent. |
 | `eager` | 14 | `bool` | Whether participants with stt may turn eager end of turn on: the operator allowed it, and the stream cap reserves decoding for its forecasts. With the turn flush on they may anyway: its reserve covers them. |
 
 ### TtsCapacityInfo
@@ -1278,10 +1179,10 @@ session.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `state` | 1 | `synauson.v1.PoolState` | The pool's state; participants with `tts` need it READY. |
+| `state` | 1 | [`PoolState`](#poolstate) | The pool's state; participants with `tts` need it READY. |
 | `workers` | 2 | optional `int32` | Synthesis workers in the pool, once known. |
 | `threads_per_worker` | 3 | optional `int32` | Inference threads each worker uses, once known. |
-| `streams` | 4 | `synauson.v1.Usage` | The cap on utterances synthesising at once, and how many are. |
+| `streams` | 4 | [`Usage`](#usage) | The cap on utterances synthesising at once, and how many are. |
 | `detail` | 5 | optional `string` | Why it is idle, or failed. |
 
 ### LimitsScope
@@ -1466,8 +1367,8 @@ response doesn't report them.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `conference_id` | 1 | `string` | The conference's id. |
-| `participants` | 2 | repeated `synauson.v1.ParticipantInfo` | Its participants, in no particular order; at most the operator's participant cap, when one is set. A SIP reservation not yet connected is not a participant and is left out. |
-| `create_time` | 3 | [`Timestamp`](#timestamp) | When the conference started. |
+| `participants` | 2 | repeated [`ParticipantInfo`](#participantinfo) | Its participants, in no particular order; at most the operator's participant cap, when one is set. A SIP reservation not yet connected is not a participant and is left out. |
+| `create_time` | 3 | `google.protobuf.Timestamp` | When the conference started. |
 
 ### ParticipantInfo
 
@@ -1476,7 +1377,7 @@ One participant of a conference.
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `participant_id` | 1 | `string` | The participant's id. |
-| `kind` | 2 | `synauson.v1.ParticipantKind` | What kind of participant it is. |
+| `kind` | 2 | [`ParticipantKind`](#participantkind) | What kind of participant it is. |
 
 ### ParticipantKind
 
@@ -1527,11 +1428,11 @@ are in use.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `vad` | 1 | `synauson.v1.VadConfig` | Voice activity detection: when the participant speaks. |
-| `turn_detection` | 2 | `synauson.v1.TurnDetectionConfig` | Turn detection: at each speech end, whether the participant finished their turn. Needs `vad` on the same participant, whose speech ends it decides on. Gives the participant an agent stream (`StreamAgentEvents`). |
-| `stt` | 3 | `synauson.v1.SttConfig` | Streaming speech-to-text (`StreamTranscriptEvents`, and words on the agent stream). Needs `turn_detection` on the same participant, whose turn ends close each `TurnTranscript`. Counts against this machine's speech-to-text capacity. |
-| `turns` | 4 | `synauson.v1.TurnConfigUpdate` | The agent stream's turn config at the start, over its defaults (`end_of_turn_threshold` from `turn_detection.confidence_threshold`, timeout 5000 ms, eager off with `eager_threshold` 0); the same fields and ranges as `UpdateTurnConfig`. Needs `turn_detection`. Its `end_of_turn_threshold` replaces `turn_detection.confidence_threshold`. |
-| `tts` | 5 | `synauson.v1.TtsConfig` | A speaker: text-to-speech into the call (`Speak`, `CancelUtterance`). Needs `turn_detection` on the same participant: its events go on the agent stream. Licensed by FEATURE_TTS. |
+| `vad` | 1 | [`VadConfig`](#vadconfig) | Voice activity detection: when the participant speaks. |
+| `turn_detection` | 2 | [`TurnDetectionConfig`](#turndetectionconfig) | Turn detection: at each speech end, whether the participant finished their turn. Needs `vad` on the same participant, whose speech ends it decides on. Gives the participant an agent stream (`StreamAgentEvents`). |
+| `stt` | 3 | [`SttConfig`](#sttconfig) | Streaming speech-to-text (`StreamTranscriptEvents`, and words on the agent stream). Needs `turn_detection` on the same participant, whose turn ends close each `TurnTranscript`. Counts against this machine's speech-to-text capacity. |
+| `turns` | 4 | [`TurnConfigUpdate`](#turnconfigupdate) | The agent stream's turn config at the start, over its defaults (`end_of_turn_threshold` from `turn_detection.confidence_threshold`, timeout 5000 ms, eager off with `eager_threshold` 0); the same fields and ranges as `UpdateTurnConfig`. Needs `turn_detection`. Its `end_of_turn_threshold` replaces `turn_detection.confidence_threshold`. |
+| `tts` | 5 | [`TtsConfig`](#ttsconfig) | A speaker: text-to-speech into the call (`Speak`, `CancelUtterance`). Needs `turn_detection` on the same participant: its events go on the agent stream. Licensed by FEATURE_TTS. |
 
 ### TtsConfig
 
@@ -1710,11 +1611,11 @@ cases take 10 and up.
 |---|---|---|---|
 | `conference_id` | 1 | `string` | The participant's conference. |
 | `participant_id` | 2 | `string` | The file participant the event is about. |
-| `event_time` | 3 | [`Timestamp`](#timestamp) | Wall-clock time the event was made. |
-| `playback_started` | 10 | oneof event: `synauson.v1.FilePlaybackStarted` | A file started playing: the participant's own file when it was added, or a priority file (`AddPriorityAudioFiles`). |
-| `playback_ended` | 11 | oneof event: `synauson.v1.FilePlaybackEnded` | A priority file finished playing. |
-| `eos` | 12 | oneof event: `synauson.v1.FileEos` | The participant's own file reached its end (never with `loop_playback`). |
-| `error` | 13 | oneof event: `synauson.v1.FileError` | A file can't be played. |
+| `event_time` | 3 | `google.protobuf.Timestamp` | Wall-clock time the event was made. |
+| `playback_started` | 10 | oneof event: [`FilePlaybackStarted`](#fileplaybackstarted) | A file started playing: the participant's own file when it was added, or a priority file (`AddPriorityAudioFiles`). |
+| `playback_ended` | 11 | oneof event: [`FilePlaybackEnded`](#fileplaybackended) | A priority file finished playing. |
+| `eos` | 12 | oneof event: [`FileEos`](#fileeos) | The participant's own file reached its end (never with `loop_playback`). |
+| `error` | 13 | oneof event: [`FileError`](#fileerror) | A file can't be played. |
 
 `oneof event`: What happened. Clients must ignore cases they don't know.
 
@@ -1757,9 +1658,9 @@ cases take 10 and up.
 |---|---|---|---|
 | `conference_id` | 1 | `string` | The participant's conference. |
 | `participant_id` | 2 | `string` | The participant the event is about. |
-| `event_time` | 3 | [`Timestamp`](#timestamp) | Wall-clock time the event was made. |
-| `speech_start` | 10 | oneof event: `synauson.v1.VadSpeechStart` | Speech started. |
-| `speech_end` | 11 | oneof event: `synauson.v1.VadSpeechEnd` | Speech ended. |
+| `event_time` | 3 | `google.protobuf.Timestamp` | Wall-clock time the event was made. |
+| `speech_start` | 10 | oneof event: [`VadSpeechStart`](#vadspeechstart) | Speech started. |
+| `speech_end` | 11 | oneof event: [`VadSpeechEnd`](#vadspeechend) | Speech ended. |
 
 `oneof event`: What happened. Clients must ignore cases they don't know.
 
@@ -1791,7 +1692,7 @@ the decision takes 10 and up.
 |---|---|---|---|
 | `conference_id` | 1 | `string` | The participant's conference. |
 | `participant_id` | 2 | `string` | The participant the decision is about. |
-| `event_time` | 3 | [`Timestamp`](#timestamp) | Wall-clock time the decision was made. |
+| `event_time` | 3 | `google.protobuf.Timestamp` | Wall-clock time the decision was made. |
 | `probability` | 10 | `float` | The model's probability that the turn is complete, in [0, 1]. |
 | `turn_complete` | 11 | `bool` | Whether `probability` reached the participant's end of turn threshold (`TurnConfig.end_of_turn_threshold`, so `UpdateTurnConfig` changes it too). |
 
@@ -1808,9 +1709,9 @@ the oneof's cases take 10 and up.
 |---|---|---|---|
 | `conference_id` | 1 | `string` | The participant's conference. |
 | `participant_id` | 2 | `string` | The participant the transcript is of. |
-| `event_time` | 3 | [`Timestamp`](#timestamp) | Wall-clock time the event was made. |
-| `delta` | 10 | oneof event: `synauson.v1.TranscriptDelta` | Newly committed text. |
-| `turn` | 11 | oneof event: `synauson.v1.TurnTranscript` | A turn's text. |
+| `event_time` | 3 | `google.protobuf.Timestamp` | Wall-clock time the event was made. |
+| `delta` | 10 | oneof event: [`TranscriptDelta`](#transcriptdelta) | Newly committed text. |
+| `turn` | 11 | oneof event: [`TurnTranscript`](#turntranscript) | A turn's text. |
 
 `oneof event`: What happened. Clients must ignore cases they don't know.
 
@@ -1881,7 +1782,7 @@ license starts nothing new); `INTERNAL`; and the detector errors
 | `participant_id` | 2 | `string` | Required. The new participant's id, chosen by the caller. |
 | `uri` | 3 | `string` | Required. The file to play, as a URI with a scheme (file:///path/to/audio.wav). Accepted formats: WAV (PCM, A-law or mu-law), Ogg Opus, Ogg Vorbis, FLAC and MP3. A file in any other format fails the add with `INVALID_ARGUMENT`. |
 | `loop_playback` | 4 | `bool` | Play the file again from the start each time it ends. |
-| `detectors` | 5 | `synauson.v1.DetectorConfig` | Detectors to run on the file's audio. |
+| `detectors` | 5 | [`DetectorConfig`](#detectorconfig) | Detectors to run on the file's audio. |
 
 ### AddFileParticipantResponse
 
@@ -1990,7 +1891,7 @@ to its own participant); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND`
 | Field | Number | Type | Description |
 |---|---|---|---|
 | `conference_id` | 1 | `string` | Required. The conference. |
-| `routes` | 2 | repeated `synauson.v1.AudioRoute` | Every route the conference should have, at most 4096. |
+| `routes` | 2 | repeated [`AudioRoute`](#audioroute) | Every route the conference should have, at most 4096. |
 
 ### SetAudioRoutesResponse
 
@@ -2046,8 +1947,8 @@ detector errors (`DetectorConfig`).
 | `remote_rtp_port` | 4 | `int32` | Required. Port the peer receives RTP on (its SDP m= line), 1 to 65535. RTCP goes to the next port. |
 | `codec` | 5 | `string` | Required. The codec's RTP payload format name (RFC 3551 and the IANA registry, as in the SDP a=rtpmap line): "PCMU", "PCMA" or "OPUS", in any case. |
 | `dtmf_payload_type` | 6 | `int32` | RFC 4733 telephone-event payload type, usually 101; 0 turns RFC 4733 DTMF off. Otherwise it must be in RFC 3551's dynamic range, 96 to 127. |
-| `srtp` | 7 | `synauson.v1.SrtpConfig` | SRTP keys, for an encrypted call; unset for plain RTP. |
-| `detectors` | 8 | `synauson.v1.DetectorConfig` | Detectors to run on the call's incoming audio. |
+| `srtp` | 7 | [`SrtpConfig`](#srtpconfig) | SRTP keys, for an encrypted call; unset for plain RTP. |
+| `detectors` | 8 | [`DetectorConfig`](#detectorconfig) | Detectors to run on the call's incoming audio. |
 
 ### AddSipParticipantResponse
 
@@ -2136,8 +2037,8 @@ the detector errors (`DetectorConfig`).
 |---|---|---|---|
 | `conference_id` | 1 | `string` | Required. The reservation's conference. |
 | `participant_id` | 2 | `string` | Required. The reserved participant's id. |
-| `remote` | 3 | `synauson.v1.SipRemoteMedia` | Required. The media the peer's SDP answer negotiated. |
-| `detectors` | 4 | `synauson.v1.DetectorConfig` | Detectors to run on the call's incoming audio. |
+| `remote` | 3 | [`SipRemoteMedia`](#sipremotemedia) | Required. The media the peer's SDP answer negotiated. |
+| `detectors` | 4 | [`DetectorConfig`](#detectorconfig) | Detectors to run on the call's incoming audio. |
 
 ### ConnectSipParticipantResponse
 
@@ -2225,7 +2126,7 @@ A SIP participant's statistics.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `stats` | 1 | `synauson.v1.SipStats` | The statistics now. |
+| `stats` | 1 | [`SipStats`](#sipstats) | The statistics now. |
 
 ## synauson/v1/webrtc.proto
 
@@ -2251,8 +2152,8 @@ detector errors (`DetectorConfig`).
 | `conference_id` | 1 | `string` | Required. The conference to join. |
 | `participant_id` | 2 | `string` | Required. The new participant's id, chosen by the caller. |
 | `sdp_offer` | 3 | `string` | Required. The peer's SDP offer (from createOffer and setLocalDescription in a browser). |
-| `detectors` | 4 | `synauson.v1.DetectorConfig` | Detectors to run on the peer's audio. |
-| `options` | 5 | `synauson.v1.WebRtcOptions` | Per-participant options. Anything left unset uses the server's defaults, then the built-in defaults documented per field. |
+| `detectors` | 4 | [`DetectorConfig`](#detectorconfig) | Detectors to run on the peer's audio. |
+| `options` | 5 | [`WebRtcOptions`](#webrtcoptions) | Per-participant options. Anything left unset uses the server's defaults, then the built-in defaults documented per field. |
 
 ### WebRtcOptions
 
@@ -2264,7 +2165,7 @@ AddWebRtcParticipant with INVALID_ARGUMENT.
 |---|---|---|---|
 | `stun_server` | 1 | optional `string` | stun://host[:port] (the browser form stun:host is refused). An empty string turns STUN off for this participant. Default: the server's --webrtc-stun-server, which is off unless the operator sets one. |
 | `turn_servers` | 2 | repeated `string` | turn(s)://user:password@host[:port][?transport=udp\|tcp]. Percent-encode any of : @ / ? # in the user or password. At most 8 relays; turn:// without a transport counts as two. Default: none. |
-| `ice_transport_policy` | 3 | `synauson.v1.WebRtcIceTransportPolicy` | Which ICE candidates to use. Default: ALL. |
+| `ice_transport_policy` | 3 | [`WebRtcIceTransportPolicy`](#webrtcicetransportpolicy) | Which ICE candidates to use. Default: ALL. |
 | `ice_port_min` | 4 | optional `int32` | Lowest local port for the participant's ICE candidates, 1 to 65535; set both or neither. Default: the server's range, else any port. Each concurrent participant needs a port per local address (one for UDP and one for ICE-TCP), so size the range for the load. |
 | `ice_port_max` | 5 | optional `int32` | Highest local port for the participant's ICE candidates; see ice_port_min. |
 | `jitter_buffer_ms` | 6 | optional `int32` | Receive jitter buffer latency in ms (a duration), 0 to 2000. Default: the server's (200). Every mix of this participant's audio waits for it, so the others hear it late by the same amount. |
@@ -2283,7 +2184,7 @@ and policy fields are the resolved values synauson applied.
 |---|---|---|---|
 | `stun_server` | 1 | `string` | The STUN server; empty when STUN is off. |
 | `turn_servers` | 2 | repeated `string` | The TURN servers, credentials redacted: turn://***@host:port. |
-| `ice_transport_policy` | 3 | `synauson.v1.WebRtcIceTransportPolicy` | The ICE transport policy in force. |
+| `ice_transport_policy` | 3 | [`WebRtcIceTransportPolicy`](#webrtcicetransportpolicy) | The ICE transport policy in force. |
 | `ice_port_min` | 4 | optional `int32` | Lowest local ICE port; unset when the ICE agent may pick any port. |
 | `ice_port_max` | 5 | optional `int32` | Highest local ICE port; unset when the ICE agent may pick any port. |
 | `jitter_buffer_ms` | 6 | `int32` | Receive jitter buffer latency in ms (a duration), from the live jitter buffer once RTP has arrived. |
@@ -2378,7 +2279,7 @@ counter it can't report yet is 0.
 | `bytes_sent` | 8 | `int64` | Bytes of RTP sent. |
 | `max_jitter_ns` | 9 | `int64` | The largest receive interarrival jitter of the streams the peer sends, in ns (`SipStats.avg_jitter_ns` is an average). |
 | `rtt_ms` | 10 | `int64` | Round-trip time in ms (a duration), once the peer's first RTCP receiver report has arrived; 0 before, and under 0.5 ms rounds to 0. |
-| `effective_options` | 11 | `synauson.v1.WebRtcEffectiveOptions` | The options the participant runs with. |
+| `effective_options` | 11 | [`WebRtcEffectiveOptions`](#webrtceffectiveoptions) | The options the participant runs with. |
 
 ### GetWebRtcStatsResponse
 
@@ -2386,7 +2287,7 @@ A WebRTC participant's statistics.
 
 | Field | Number | Type | Description |
 |---|---|---|---|
-| `stats` | 1 | `synauson.v1.WebRtcStats` | The statistics now. |
+| `stats` | 1 | [`WebRtcStats`](#webrtcstats) | The statistics now. |
 
 ### WebRtcIceTransportPolicy
 

@@ -103,7 +103,10 @@ def field_type(field, package, maps):
 
 
 def render(fds):
-    files = sorted(fds["file"], key=lambda f: f["name"])
+    # buf's image also carries the imports (google/protobuf/...), protoc's set
+    # only the files named, so keep just the API's own files.
+    files = sorted((f for f in fds["file"] if f["name"].startswith("synauson/")),
+                   key=lambda f: f["name"])
     package = files[0]["package"]
     out = [
         "# synauson API reference",

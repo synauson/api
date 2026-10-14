@@ -4,6 +4,18 @@ Releases of the synauson API (`synauson.v1`), tagged `vX.Y.Z` in this repository
 published to PyPI as `synauson-api`. Each release names the oldest synauson server
 version that serves it.
 
+## [1.0.1] - 2026-10-14
+
+Needs synauson server 1.8.0 or newer.
+
+The first release on PyPI, with the same protos as 1.0.0. Version 1.0.0 is tagged
+here but was never published to PyPI.
+
+### Fixed
+
+- Fix the API reference (`docs/api.md`), which named the package `google.protobuf`
+  and printed message and enum types without links.
+
 ## [1.0.0] - 2026-10-14
 
 Needs synauson server 1.8.0 or newer.

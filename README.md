@@ -48,7 +48,7 @@ error carries. To type-check your code against the stubs, also install
 `types-protobuf`, `types-grpcio` and `types-grpcio-status`, and set mypy's
 `follow_untyped_imports` for `google.rpc.*` (googleapis-common-protos has stubs but
 no `py.typed`). The package's version is the API version:
-`synauson-api 1.0.0` is tag `v1.0.0` here. `synauson` is a namespace package: a
+`synauson-api X.Y.Z` is tag `vX.Y.Z` here. `synauson` is a namespace package: a
 package of your own under it must not have a `synauson/__init__.py`.
 
 Start a server, then connect to it. With the container image, for example:
