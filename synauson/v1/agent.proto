@@ -1,0 +1,703 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "AgentProto";
+option java_package = "com.synauson.api.v1";
+
+// The voice-agent event stream: one ordered stream of events per
+// participant with turn detection, with its turns and, when speech-to-text
+// runs, their words, and when it has a speaker (DetectorConfig.tts), what it
+// played. Clients must ignore oneof cases and enum values they don't know.
+//
+// Times named `*_ms` are conference time: the conference's running time in
+// ms, one clock for every participant of the conference. Fields documented
+// as durations are lengths of time instead, and `PlayedWord`'s times are
+// offsets into its utterance's audio.
+
+// Subscribe to a participant's voice-agent events.
+//
+// The stream keeps its last 512 events. Without after_seq a subscription
+// gets every kept event, then live ones. To resume after a disconnect, send
+// the last seq you processed as after_seq with its stream_id: you get
+// exactly the events after it, none twice.
+//
+// Each subscriber has its own queue of 256 events and never slows the
+// conference. One that falls that far behind gets the events already
+// queued, then the stream ends with `AGENT_SUBSCRIBER_LAGGED` (metadata
+// `lastSeq`); resume from that seq while it is still kept.
+//
+// The stream ends normally after `AgentStreamEnded`, when the participant
+// is removed or its conference terminated; a server shutdown terminates
+// every conference first. Any other end (a lost connection, a lagging
+// subscriber, the server stopping without a drain) can be resumed with the
+// cursor. Without events the stream sends an `AgentHeartbeat` every
+// `heartbeat_ms`: a client that gets nothing for a few intervals should
+// treat the stream as dead, cancel it and resume.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (an `after_seq` past the newest
+// seq); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND`;
+// `TURN_DETECTION_REQUIRED`; `AGENT_STREAM_MISMATCH` (metadata `streamId`,
+// the current one); `AGENT_REPLAY_EXPIRED` (metadata `oldestSeq`,
+// `lastSeq`, `streamId`).
+message StreamAgentEventsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose events to stream.
+  string participant_id = 2;
+  // Resume: send the events after this seq. Unset sends every event the
+  // stream still keeps, then live ones. A cursor older than the oldest kept
+  // event fails with `AGENT_REPLAY_EXPIRED`: subscribe again without one.
+  optional int64 after_seq = 3;
+  // The stream `after_seq` came from (`AgentEvent.stream_id`). When set it
+  // must be the participant's current stream, else `AGENT_STREAM_MISMATCH`:
+  // the participant was added again, so start on the new stream.
+  optional int64 stream_id = 4;
+  // Heartbeat interval in ms (a duration): an `AgentHeartbeat` comes
+  // whenever nothing else did for this long. 1000 when unset; clamped to
+  // 100 to 30000.
+  optional int32 heartbeat_ms = 5;
+}
+
+// One event. Every subscriber gets the events in the same order. Field
+// numbers of the oneof group its cases: 10-19 stream control, 20-39 speech
+// and turns, 40-59 playback.
+//
+// The events that end a turn (`AgentEndOfTurn`) and an utterance
+// (`AgentUtteranceDone`, `AgentUtteranceInterrupted`,
+// `AgentUtteranceFailed`) are closed sets in v1: a later release adds no
+// other way for a turn or an utterance to end, so a client can track open
+// turns and utterances by them. Other cases may be added.
+message AgentEvent {
+  // The participant's conference.
+  string conference_id = 1;
+  // The participant the event is about.
+  string participant_id = 2;
+  // Names the participant's stream. A participant added again under the
+  // same id gets a new `stream_id`, and its seqs start again from 1.
+  int64 stream_id = 3;
+  // Strictly increasing from 1 over stored events. `AgentSubscribed` and
+  // `AgentHeartbeat` aren't stored: they repeat the last seq this
+  // subscription has (the cursor, for `AgentSubscribed`).
+  int64 seq = 4;
+  // Wall-clock time the event was made.
+  google.protobuf.Timestamp event_time = 5;
+  // What happened. Clients must ignore cases they don't know.
+  oneof event {
+    // First on every subscription.
+    AgentSubscribed subscribed = 10;
+    // Nothing else happened for the heartbeat interval.
+    AgentHeartbeat heartbeat = 11;
+    // A recoverable problem; the stream goes on.
+    AgentError error = 12;
+    // Last on the stream.
+    AgentStreamEnded stream_ended = 13;
+    // Voice activity detection heard speech start.
+    AgentSpeechStarted speech_started = 20;
+    // Voice activity detection heard the speech stop.
+    AgentSpeechStopped speech_stopped = 21;
+    // A turn started.
+    AgentTurnStarted turn_started = 22;
+    // More of the open turn's words.
+    AgentTurnWords turn_words = 23;
+    // The open turn may have ended at a pause.
+    AgentEagerEndOfTurn eager_end_of_turn = 24;
+    // The turn's last eager end of turn was premature.
+    AgentTurnResumed turn_resumed = 25;
+    // A turn ended.
+    AgentEndOfTurn end_of_turn = 26;
+    // UpdateTurnConfig changed the turn config.
+    AgentTurnConfigUpdated turn_config_updated = 27;
+    // An utterance's first sample played.
+    AgentUtteranceStarted utterance_started = 40;
+    // More of an utterance's words fully played.
+    AgentWordsPlayed words_played = 41;
+    // An utterance played to its end.
+    AgentUtteranceDone utterance_done = 42;
+    // An utterance stopped before its end.
+    AgentUtteranceInterrupted utterance_interrupted = 43;
+    // An utterance failed.
+    AgentUtteranceFailed utterance_failed = 44;
+  }
+}
+
+// First on every subscription.
+message AgentSubscribed {
+  // The oldest event the stream still keeps, 0 when it keeps none.
+  int64 oldest_seq = 1;
+  // The stream's newest seq when the subscription started, 0 before its
+  // first event.
+  int64 last_seq = 2;
+  // Whether speech-to-text runs on the participant.
+  bool stt = 3;
+  // The turn config in effect.
+  TurnConfig turn_config = 4;
+  // Whether the participant has a speaker (text-to-speech).
+  bool tts = 5;
+  // The speaker's default voice, when it has one.
+  optional string voice = 6;
+}
+
+// Sent when nothing else was for the heartbeat interval.
+message AgentHeartbeat {
+  // The conference's time now.
+  int64 conference_ms = 1;
+  // The conference time speech-to-text has transcribed up to, when it runs
+  // and has reported.
+  optional int64 stt_decoded_ms = 2;
+  // Audio waiting to be transcribed (a duration), when speech-to-text
+  // reported it.
+  optional int64 stt_backlog_ms = 3;
+}
+
+// A recoverable problem: the stream goes on. Stream-fatal errors end the
+// RPC with a status carrying a `google.rpc.ErrorInfo` instead.
+message AgentError {
+  // Stable, UPPER_SNAKE_CASE, one of `ErrorReason`'s `AgentError` values;
+  // others may be added:
+  //
+  // `TURN_DETECTION_FAILED`: turn detection stopped on the participant;
+  // turns end only by timeout or `ForceEndTurn` from then on.
+  //
+  // `TURN_DECISION_MISSING`: a speech end got no turn detection decision
+  // within 2 s; the timeout still ends the turn.
+  //
+  // `STT_STOPPED`: speech-to-text failed; turns end with the words they
+  // had, and later ones without words.
+  //
+  // `STT_LAGGING`: the transcription's backlog passed the participant's
+  // `SttConfig.turn_drain_ms` (at least 500 ms; metadata `backlogMs`,
+  // `thresholdMs`). Turns may end incomplete, their late words opening the
+  // next turn or a late turn of their own. Sent again only after the
+  // backlog falls to half the threshold.
+  string reason = 1;
+  // What happened, for people. Don't match on it.
+  string message = 2;
+  // Details, keyed by lowerCamelCase name; which keys come depends on the
+  // reason.
+  map<string, string> metadata = 3;
+  // The turn it concerns, if any.
+  optional int64 turn_id = 4;
+}
+
+// Why an agent stream ended. May gain values: accept ones you don't know.
+enum AgentStreamEndReason {
+  // Never sent.
+  AGENT_STREAM_END_REASON_UNSPECIFIED = 0;
+  // The participant was removed.
+  AGENT_STREAM_END_REASON_PARTICIPANT_REMOVED = 1;
+  // The conference was terminated, by `TerminateConference` or by a
+  // server shutdown.
+  AGENT_STREAM_END_REASON_CONFERENCE_TERMINATED = 2;
+}
+
+// Last on the stream; the RPC then completes.
+message AgentStreamEnded {
+  // Why the stream ended.
+  AgentStreamEndReason reason = 1;
+}
+
+// Voice activity detection heard speech start. This is raw voice activity:
+// noise can start it too. It carries no turn and goes out at once.
+message AgentSpeechStarted {
+  // Where the speech started, before the detector's debounce, so it
+  // precedes the event by up to VadConfig.min_speech_ms.
+  int64 at_ms = 1;
+  // The detector's probability for the window that confirmed it.
+  float probability = 2;
+}
+
+// Voice activity detection heard the speech stop. It carries no turn and
+// goes out at once.
+message AgentSpeechStopped {
+  // Where the speech stopped, before the detector's debounce, so it precedes
+  // the event by up to VadConfig.min_silence_ms.
+  int64 at_ms = 1;
+  // How long it lasted (a duration): at_ms less its AgentSpeechStarted's.
+  int64 speech_ms = 2;
+}
+
+// A turn started. Turn ids rise by one from 1. Each AgentTurnStarted is
+// followed by exactly one AgentEndOfTurn for it, and no event of a turn
+// (its start, its words, its errors) comes before the previous turn's
+// AgentEndOfTurn. Speech after a pause stays in the open turn unless turn
+// detection then calls the pause the turn's end.
+//
+// A late turn holds words speech-to-text committed after the turn before it
+// ended incomplete (it lagged past SttConfig.turn_drain_ms) when the
+// participant said nothing more. It comes once the words are transcribed,
+// with no speech of its own; if speech starts first, the words open that
+// speech's turn instead.
+message AgentTurnStarted {
+  // The turn's id.
+  int64 turn_id = 1;
+  // Where the turn's speech started (the voice activity detector's speech
+  // start); for a late turn, its first word's start.
+  int64 start_ms = 2;
+  // Whether words started it. True when speech-to-text runs: the turn
+  // starts with its first word, and a turn without words is never sent.
+  // False without speech-to-text, where the speech start starts it.
+  bool word_backed = 3;
+}
+
+// More of the open turn's words, each once it is complete (the next word
+// started, or the turn closed). A turn's AgentTurnWords, in order, are
+// exactly its AgentEndOfTurn's words.
+message AgentTurnWords {
+  // The open turn's id.
+  int64 turn_id = 1;
+  // The words, in order.
+  repeated Word words = 2;
+  // Audio waiting to be transcribed (a duration), when speech-to-text
+  // reported it.
+  optional int64 stt_backlog_ms = 3;
+}
+
+// One transcribed word. Its times are when the model emitted it, which
+// trails the audio by up to the model's commit delay (about 800 ms for the
+// default model before a pause, less in running speech).
+message Word {
+  // The word with its punctuation, no leading space ("Hello,"). A turn's
+  // first word leaves out the end of the sentence before it.
+  string text = 1;
+  // When its first piece was emitted.
+  int64 start_ms = 2;
+  // Where its last piece ends.
+  int64 end_ms = 3;
+  // The model's lowest confidence in its pieces, in [0, 1]; unset when the
+  // model gives none for a piece. A relative score (a low one flags a word
+  // worth confirming), not a calibrated probability of being right.
+  optional float confidence = 4;
+}
+
+// The open turn may have ended: a pause turn detection hasn't confirmed as
+// its end (TurnConfig.eager), so an agent can start preparing its reply.
+// Its text is what the turn's AgentEndOfTurn will say if this pause ends
+// it: an AgentEndOfTurn's text is the last AgentEagerEndOfTurn's unless an
+// AgentTurnResumed came between them. A turn may have several, each after
+// an AgentTurnResumed.
+//
+// With speech-to-text, synauson forecasts the pause's last words ahead of
+// real time. If turn detection ends the turn before the forecast is ready,
+// no eager end is sent for that pause: the AgentEndOfTurn comes as soon as
+// it would have.
+message AgentEagerEndOfTurn {
+  // The open turn's id.
+  int64 turn_id = 1;
+  // Its words joined by single spaces; empty without speech-to-text.
+  string text = 2;
+  // The turn's words up to the pause: those sent in AgentTurnWords so far,
+  // then the rest, which may include words forecast but not yet committed.
+  // Empty without speech-to-text.
+  repeated Word words = 3;
+  // Where the pause's speech ended (the voice activity detector's speech
+  // end).
+  int64 speech_end_ms = 4;
+  // Turn detection's probability for the pause, when the eager end came on its
+  // decision; unset when it came at the speech end (eager_threshold 0).
+  optional float probability = 5;
+  // How long it took; drain_ms is how long speech-to-text took for the
+  // text, from the pause becoming eager.
+  TurnLatency latency = 6;
+}
+
+// Why an eager end of turn was taken back. May gain values: accept ones you
+// don't know.
+enum TurnResumeCause {
+  // Never sent.
+  TURN_RESUME_CAUSE_UNSPECIFIED = 0;
+  // The participant spoke again, and turn detection didn't call the pause
+  // the turn's end (synauson waits up to 250 ms for a decision in flight).
+  TURN_RESUME_CAUSE_SPEECH = 1;
+  // Committed words differ from the eager end of turn's.
+  TURN_RESUME_CAUSE_WORDS = 2;
+}
+
+// The turn's last AgentEagerEndOfTurn was premature: the turn goes on, and
+// its text no longer stands. At most one per AgentEagerEndOfTurn.
+message AgentTurnResumed {
+  // The open turn's id.
+  int64 turn_id = 1;
+  // What took the eager end back.
+  TurnResumeCause cause = 2;
+  // SPEECH: where it restarted (the voice activity detector's speech
+  // start). WORDS: when the first
+  // word that differs was emitted, or when the turn ended if its
+  // AgentEndOfTurn is what differs.
+  int64 at_ms = 3;
+}
+
+// Why a turn ended. May gain values: accept ones you don't know.
+enum TurnEndReason {
+  // Never sent.
+  TURN_END_REASON_UNSPECIFIED = 0;
+  // Turn detection's probability for a pause reached end_of_turn_threshold.
+  TURN_END_REASON_MODEL = 1;
+  // `ForceEndTurn`.
+  TURN_END_REASON_MANUAL = 2;
+  // Silence for end_of_turn_timeout_ms after a speech end.
+  TURN_END_REASON_TIMEOUT = 3;
+  // The participant or the conference went with the turn open.
+  TURN_END_REASON_STREAM_ENDED = 4;
+}
+
+// A turn ended: exactly one per AgentTurnStarted, in turn order. With
+// speech-to-text it waits for the turn's transcript; a turn it finds no
+// words in is not on this stream at all. Without speech-to-text it comes at
+// once. A late turn ends for the reason, and with the probability, of the
+// turn before it (STREAM_ENDED when there was none).
+message AgentEndOfTurn {
+  // The turn's id.
+  int64 turn_id = 1;
+  // Why it ended.
+  TurnEndReason reason = 2;
+  // Its words joined by single spaces: the turn's TurnTranscript text
+  // without its leading space when speech-to-text runs; empty otherwise.
+  string text = 3;
+  // The turn's words, in order; empty without speech-to-text.
+  repeated Word words = 4;
+  // Where the turn's speech started, as in its AgentTurnStarted.
+  int64 start_ms = 5;
+  // Where the turn's speech ended: the voice activity detector's last speech
+  // end, or when the turn ended if the participant was still speaking; a
+  // late turn's last word's end.
+  int64 speech_end_ms = 6;
+  // Turn detection's probability for the turn's last pause, when it decided.
+  optional float probability = 7;
+  // False when the text may lack the turn's last words: speech-to-text ran
+  // out of drain time, or stopped, first.
+  bool complete = 8;
+  // How long the end of turn took.
+  TurnLatency latency = 9;
+}
+
+// How long an end of turn took. Every field is a duration.
+message TurnLatency {
+  // From the speech end to the event.
+  optional int64 since_speech_end_ms = 1;
+  // Turn detection's decision: its time queued plus its inference (reason
+  // MODEL only).
+  optional int64 decision_ms = 2;
+  // From the turn's end to speech-to-text settling its text.
+  optional int64 drain_ms = 3;
+  // Audio waiting to be transcribed when the turn ended.
+  optional int64 stt_backlog_ms = 4;
+}
+
+// How a participant's turns end; every field set.
+message TurnConfig {
+  // Turn detection's probability at or above which a pause ends the turn.
+  float end_of_turn_threshold = 1;
+  // Eager end of turn: an AgentEagerEndOfTurn for each pause that may end
+  // the turn. With speech-to-text it needs the instance to allow it
+  // (SttCapacityInfo.eager), else it is refused.
+  bool eager = 2;
+  // Turn detection's probability at or above which a pause sends the eager
+  // end of turn; 0 (the default) sends it at the speech end. At most
+  // `end_of_turn_threshold`.
+  float eager_threshold = 3;
+  // Silence after a speech end that ends the turn anyway (reason TIMEOUT),
+  // in ms (a duration); 0 turns it off. Default 5000.
+  int32 end_of_turn_timeout_ms = 4;
+}
+
+// Changes to a `TurnConfig`: each field set replaces the current one; an
+// unset field keeps it. A value out of range is refused
+// (`INVALID_TURN_CONFIG`) and leaves the config unchanged.
+message TurnConfigUpdate {
+  // In [0, 1].
+  optional float end_of_turn_threshold = 1;
+  // Turning it on with speech-to-text is refused unless the instance allows
+  // it (`SttCapacityInfo.eager`).
+  optional bool eager = 2;
+  // In [0, 1], and at most `end_of_turn_threshold`.
+  optional float eager_threshold = 3;
+  // 0 to 60000 ms (a duration). A changed timeout applies to the open
+  // turn's current pause too.
+  optional int32 end_of_turn_timeout_ms = 4;
+}
+
+// UpdateTurnConfig changed the turn config.
+message AgentTurnConfigUpdated {
+  // The config now in effect.
+  TurnConfig config = 1;
+}
+
+// End the participant's open turn now. Its AgentEndOfTurn (reason MANUAL)
+// follows on the stream: at once without speech-to-text; with it once the
+// transcript settles, which synauson speeds up by forecasting the turn's
+// last words (at most SttConfig.turn_drain_ms). If the participant is still
+// speaking, the speech ends where the turn did and the next turn starts at
+// once.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
+// `TURN_DETECTION_REQUIRED`.
+message ForceEndTurnRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose turn to end.
+  string participant_id = 2;
+}
+
+// What ForceEndTurn ended.
+message ForceEndTurnResponse {
+  // Whether a turn was open and is ending; its AgentEndOfTurn (reason
+  // MANUAL) follows on the stream.
+  bool ended = 1;
+  // The turn's id, when it is on the stream. With speech-to-text a turn is
+  // on the stream once it has a word: one ended before its first has no id
+  // here, and is sent, with its AgentEndOfTurn, only if speech-to-text finds
+  // words in it.
+  optional int64 turn_id = 2;
+}
+
+// Change how the participant's turns end.
+//
+// Errors: `INVALID_ID`, `INVALID_TURN_CONFIG` (a value out of range; the
+// config is unchanged), `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
+// `TURN_DETECTION_REQUIRED`.
+message UpdateTurnConfigRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose turn config to change.
+  string participant_id = 2;
+  // The changes; unset changes nothing.
+  TurnConfigUpdate update = 3;
+}
+
+// The turn config after UpdateTurnConfig.
+message UpdateTurnConfigResponse {
+  // The config now in effect.
+  TurnConfig config = 1;
+  // The seq of the `AgentTurnConfigUpdated` event that announced it.
+  int64 seq = 2;
+}
+
+// Speak: start or continue an utterance on the participant's speaker. The
+// reply comes once the speaker has the text, never after synthesis, and a
+// Speak may come while earlier utterances still play (they queue). Speech
+// starts after a short first chunk, then synthesis runs ahead of playback.
+//
+// Speak is not retry-safe: a Speak whose reply was lost may have reached
+// the speaker, and sending it again speaks its text twice. After a lost
+// reply, cancel the utterance or carry on with the next text.
+//
+// Errors: `INVALID_ID`; `INVALID_SPEAK` (text over its cap, voice or speed
+// after the first Speak, an unknown voice, a speed out of range, more than
+// 64 utterances queued); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND`;
+// `TTS_REQUIRED` (no speaker); `UTTERANCE_ENDED` (the utterance was ended,
+// finished, was interrupted or failed).
+message SpeakRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose speaker speaks.
+  string participant_id = 2;
+  // Required. Chosen by the caller, an id as `Syn` describes; every
+  // playback event echoes it. A new id starts an utterance; a used one
+  // continues it until it ends.
+  string utterance_id = 3;
+  // More of the utterance's text, as written: the speaker normalizes it, so
+  // numbers, money, dates and codes are read as a person would. At most
+  // 16 KiB of UTF-8 per Speak, 64 KiB per utterance.
+  string text = 4;
+  // What this text ends; unset is `SPEAK_RELEASE_NONE`.
+  SpeakRelease release = 5;
+  // Only on an utterance's first Speak. Whether CancelUtterance may stop
+  // it (default true).
+  optional bool interruptible = 6;
+  // Only on an utterance's first Speak. Whether the next new utterance
+  // stops it, reason PREEMPTED (default false).
+  optional bool preemptible = 7;
+  // Only on an utterance's first Speak: a voice instead of the speaker's
+  // default (TtsConfig.voice).
+  optional string voice = 8;
+  // Only on an utterance's first Speak: speaking rate, 0.25 to 4 (1 is the
+  // voice's own).
+  optional float speed = 9;
+}
+
+// What a Speak's text ends.
+enum SpeakRelease {
+  // Unset: treated as `SPEAK_RELEASE_NONE`.
+  SPEAK_RELEASE_UNSPECIFIED = 0;
+  // Nothing: more text may follow, and the speaker holds back what could
+  // still change (a number still being written).
+  SPEAK_RELEASE_NONE = 1;
+  // Speak everything sent so far now; the utterance stays open.
+  SPEAK_RELEASE_FLUSH = 2;
+  // The utterance's text is complete; `AgentUtteranceDone` follows its
+  // playback.
+  SPEAK_RELEASE_END = 3;
+}
+
+// The speaker has the text.
+message SpeakResponse {
+  // The utterance's id, as sent.
+  string utterance_id = 1;
+  // Whether this Speak started the utterance.
+  bool created = 2;
+}
+
+// Stop an utterance's audio now and drop its queue. The audio stops within
+// one 20 ms buffer of the command reaching the conference, plus what the
+// participant's mixer already holds (20 ms on SIP, 60 ms on WebRTC); the
+// rest of the call's audio is untouched.
+//
+// Errors: `INVALID_ID`; `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND`;
+// `UNKNOWN_UTTERANCE` (an id the speaker never had); `TTS_REQUIRED`;
+// `UTTERANCE_NOT_INTERRUPTIBLE` (spoken with `interruptible` false).
+message CancelUtteranceRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose speaker to stop.
+  string participant_id = 2;
+  // Unset cancels every interruptible utterance, playing or queued.
+  optional string utterance_id = 3;
+}
+
+// What CancelUtterance stopped. Each canceled utterance's
+// AgentUtteranceInterrupted is on the stream before this response.
+message CancelUtteranceResponse {
+  // Each utterance canceled, in order. Empty when the utterance had
+  // already finished, or none was speaking.
+  repeated CancelledUtterance cancelled = 1;
+}
+
+// One utterance CancelUtterance stopped.
+message CancelledUtterance {
+  // The utterance's id.
+  string utterance_id = 1;
+  // What the caller heard: the text up to its last fully played word.
+  string heard_text = 2;
+  // How much of its audio played (a duration).
+  int64 heard_ms = 3;
+  // The seq of its AgentUtteranceInterrupted on the agent stream.
+  int64 seq = 4;
+}
+
+// The first sample of an utterance played. Exactly one per utterance that
+// plays any audio, before its AgentWordsPlayed; then exactly one of
+// AgentUtteranceDone, AgentUtteranceInterrupted or AgentUtteranceFailed.
+// Utterances play one after another in the order they were started, so the
+// events of utterances that play never interleave, but one that fails
+// before it plays is reported when it fails: match events by utterance_id.
+//
+// "Played" means the audio passed the speaker's clock-synced point, the
+// last place synauson can still stop it; the audio leaves synauson about
+// egress_delay_ms later.
+message AgentUtteranceStarted {
+  // The utterance's id.
+  string utterance_id = 1;
+  // When its first sample passed the speaker's clock-synced point, the
+  // last place synauson can still stop it.
+  int64 at_ms = 2;
+  // From its first Speak to at_ms (a duration).
+  int64 time_to_first_audio_ms = 3;
+  // The latency of the mixer the speaker plays to its participant
+  // through, when it has one (a duration): about how much after at_ms the
+  // audio leaves synauson.
+  optional int64 egress_delay_ms = 4;
+}
+
+// Words of an utterance that fully played, in order. Joined, an
+// utterance's AgentWordsPlayed are the words of its text that were heard;
+// none follows its AgentUtteranceDone, AgentUtteranceInterrupted or
+// AgentUtteranceFailed.
+message AgentWordsPlayed {
+  // The utterance's id.
+  string utterance_id = 1;
+  // The words, in order.
+  repeated PlayedWord words = 2;
+}
+
+// One word of an utterance that fully played.
+message PlayedWord {
+  // The word as sent, punctuation attached ("Hello,"); an entity spoken as
+  // several words is one ("$42.50").
+  string text = 1;
+  // Its range in the utterance's text (its Speaks' text concatenated), in
+  // Unicode code points, not UTF-16 units: in Java or JavaScript, index
+  // the text by code point (`String.offsetByCodePoints`) for any text
+  // outside the Basic Multilingual Plane, such as emoji.
+  int64 text_start = 2;
+  // The end of its range (exclusive), in code points.
+  int64 text_end = 3;
+  // Where it starts in the utterance's own audio (a duration from its first
+  // sample; gaps in playback don't move it).
+  int64 start_ms = 4;
+  // Where it ends in the utterance's own audio (a duration from its first
+  // sample).
+  int64 end_ms = 5;
+}
+
+// An utterance played to its end.
+message AgentUtteranceDone {
+  // The utterance's id.
+  string utterance_id = 1;
+  // Its audio's length (a duration).
+  int64 audio_ms = 2;
+  // When its last sample played.
+  int64 at_ms = 3;
+  // Silence inside it while synthesis fell behind playback (a duration).
+  int64 underrun_ms = 4;
+}
+
+// Why an utterance stopped before its end. May gain values: accept ones
+// you don't know.
+enum UtteranceInterruptReason {
+  // Never sent.
+  UTTERANCE_INTERRUPT_REASON_UNSPECIFIED = 0;
+  // `CancelUtterance`.
+  UTTERANCE_INTERRUPT_REASON_CANCELLED = 1;
+  // A new utterance started while it was preemptible.
+  UTTERANCE_INTERRUPT_REASON_PREEMPTED = 2;
+  // The participant or the conference went (sent before AgentStreamEnded).
+  UTTERANCE_INTERRUPT_REASON_STREAM_ENDED = 3;
+}
+
+// An utterance stopped before its end; nothing more of it plays.
+message AgentUtteranceInterrupted {
+  // The utterance's id.
+  string utterance_id = 1;
+  // Why it stopped.
+  UtteranceInterruptReason reason = 2;
+  // The text up to the end of its last fully played word, as sent.
+  string heard_text = 3;
+  // `heard_text`'s length in Unicode code points (not UTF-16 units, see
+  // `PlayedWord.text_start`): where the unheard text starts.
+  int64 heard_text_end = 4;
+  // How much of its audio played (a duration), partly heard words included.
+  int64 heard_ms = 5;
+}
+
+// Why an utterance failed. May gain values: accept ones you don't know.
+enum UtteranceFailure {
+  // Never sent.
+  UTTERANCE_FAILURE_UNSPECIFIED = 0;
+  // The speaker's text-to-speech engine is gone.
+  UTTERANCE_FAILURE_TTS_UNAVAILABLE = 1;
+  // The model failed on its text.
+  UTTERANCE_FAILURE_SYNTHESIS_FAILED = 2;
+  // Its text has nothing to say, or a word too long for the model.
+  UTTERANCE_FAILURE_UNSPEAKABLE_TEXT = 3;
+  // The machine's text-to-speech capacity was in use when it was to start.
+  UTTERANCE_FAILURE_TTS_CAPACITY = 4;
+}
+
+// An utterance failed; nothing more of it plays.
+message AgentUtteranceFailed {
+  // The utterance's id.
+  string utterance_id = 1;
+  // Why it failed.
+  UtteranceFailure code = 2;
+  // What happened, for people. Don't match on it.
+  string message = 3;
+}

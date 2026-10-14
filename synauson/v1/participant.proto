@@ -1,0 +1,173 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "synauson/v1/detector.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "ParticipantProto";
+option java_package = "com.synauson.api.v1";
+
+// Add a participant that plays an audio file into the conference. Nobody
+// hears it until a route says so (`SetAudioRoutes`).
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (a URI without a scheme, a
+// `file:` URI naming a directory, a file that can't be opened or isn't in
+// an accepted format); `CONFERENCE_NOT_FOUND`; `FILE_NOT_FOUND`;
+// `PARTICIPANT_ALREADY_EXISTS`; `PARTICIPANT_LIMIT_REACHED`;
+// `PARTICIPANT_START_FAILED` (no audio could be decoded from the file);
+// `LICENSE_REJECTED`, `LICENSE_DISCONNECTED`, `LICENSE_EXPIRED` (the
+// license starts nothing new); `INTERNAL`; and the detector errors
+// (`DetectorConfig`).
+message AddFileParticipantRequest {
+  // Required. The conference to join.
+  string conference_id = 1;
+  // Required. The new participant's id, chosen by the caller.
+  string participant_id = 2;
+  // Required. The file to play, as a URI with a scheme
+  // (file:///path/to/audio.wav). Accepted formats: WAV (PCM, A-law or
+  // mu-law), Ogg Opus, Ogg Vorbis, FLAC and MP3. A file in any other format
+  // fails the add with `INVALID_ARGUMENT`.
+  string uri = 3;
+  // Play the file again from the start each time it ends.
+  bool loop_playback = 4;
+  // Detectors to run on the file's audio.
+  DetectorConfig detectors = 5;
+}
+
+// The file participant was added and is playing.
+message AddFileParticipantResponse {
+  // The participant's id, as requested.
+  string participant_id = 1;
+}
+
+// Add a participant that records to a WAV file (16 kHz, 16-bit mono): the
+// source participant's audio, plus whatever `SetAudioRoutes` routes to it.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (an empty `output_path`, one
+// whose directory doesn't exist, a source with no audio of its own such as
+// another recording); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND` (the
+// source); `PARTICIPANT_ALREADY_EXISTS`; `SIP_RESERVATION_NOT_CONNECTED`
+// (the source); `PARTICIPANT_LIMIT_REACHED`; `LICENSE_REJECTED`,
+// `LICENSE_DISCONNECTED`, `LICENSE_EXPIRED` (the license starts nothing
+// new); `INTERNAL`.
+message AddRecordingParticipantRequest {
+  // Required. The conference to join.
+  string conference_id = 1;
+  // Required. The new participant's id, chosen by the caller.
+  string participant_id = 2;
+  // Required. The participant to record.
+  string source_participant_id = 3;
+  // Required. Where to write the WAV file, on the server's file system. An
+  // existing file is replaced.
+  string output_path = 4;
+}
+
+// The recording participant was added and is recording.
+message AddRecordingParticipantResponse {
+  // The participant's id, as requested.
+  string participant_id = 1;
+}
+
+// Remove a participant, or release a SIP reservation. Its routes and event
+// streams end with it.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`.
+message RemoveParticipantRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant to remove.
+  string participant_id = 2;
+}
+
+// The participant was removed.
+message RemoveParticipantResponse {}
+
+// Mute or unmute a participant: outgoing only, so listeners stop hearing
+// it, while its own detectors and speech-to-text still hear it. The mute
+// belongs to the participant, not to its routes: it holds on every route
+// from it, including routes added later, until it is unmuted. Unmuting
+// gives each route back its own `muted` from the routing matrix. A SIP
+// reservation can be muted too and stays muted once it connects. The mute
+// is forgotten when the participant is removed, so an id used again starts
+// unmuted. A speaker id (`TtsConfig.speaker_id`) isn't a participant: mute
+// its routes in the matrix. Write-only: `GetConference` doesn't report it.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (an
+// id that isn't a participant or reservation in the conference).
+message MuteParticipantRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant to mute or unmute.
+  string participant_id = 2;
+  // True to mute, false to unmute.
+  bool muted = 3;
+}
+
+// The mute changed.
+message MuteParticipantResponse {}
+
+// One route: the source's audio goes to the destination.
+message AudioRoute {
+  // The participant (or speaker id) whose audio is sent.
+  string source_participant_id = 1;
+  // The participant that hears it.
+  string destination_participant_id = 2;
+  // Keep the route but send silence. A route carries audio only when
+  // neither this nor the source's `MuteParticipant` mute is set.
+  bool muted = 3;
+}
+
+// Set the conference's whole routing matrix: who hears whom. Synauson
+// compares it with the current routes: routes not in it are removed, new
+// ones added, and the others take its `muted`. An empty `routes` removes
+// every route, and a route left out is removed: always send the whole
+// matrix. Every route is checked before anything changes, so a refused
+// matrix leaves the routing as it was. A recording's source and a
+// speaker's own participant are routed without an entry. Write-only:
+// `GetConference` doesn't report the routes.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (more than 4096 routes, a
+// source with no audio of its own such as a recording, a destination that
+// can't receive audio such as a file participant, a route from a speaker
+// to its own participant); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_NOT_FOUND`
+// (an id the matrix names); `SIP_RESERVATION_NOT_CONNECTED`; `INTERNAL`.
+message SetAudioRoutesRequest {
+  // Required. The conference.
+  string conference_id = 1;
+  // Every route the conference should have, at most 4096.
+  repeated AudioRoute routes = 2;
+}
+
+// The routes changed.
+message SetAudioRoutesResponse {}
+
+// Queue audio files to play on a file participant ahead of its own file.
+// Its own file pauses while the queue plays, in order, and resumes when the
+// queue drains; more files sent meanwhile join the queue. Each priority
+// file gets a `FilePlaybackStarted` and a `FilePlaybackEnded`. One that
+// can't be opened or decoded, or isn't in a format `AddFileParticipant`
+// accepts, gets a `FileError` and is skipped: the next one plays, or the
+// participant's own file resumes.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (no URIs, more than 64, a URI
+// as for `AddFileParticipant`); `CONFERENCE_NOT_FOUND`;
+// `PARTICIPANT_NOT_FOUND`; `FILE_NOT_FOUND` (every URI is checked before
+// any plays); `FILE_PARTICIPANT_REQUIRED`.
+message AddPriorityAudioFilesRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The file participant to play them on.
+  string participant_id = 2;
+  // Required. The files to queue, in order, as URIs (see
+  // `AddFileParticipantRequest`); 1 to 64.
+  repeated string uris = 3;
+}
+
+// The files were queued.
+message AddPriorityAudioFilesResponse {}

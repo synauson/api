@@ -1,0 +1,241 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "synauson/v1/detector.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "SipProto";
+option java_package = "com.synauson.api.v1";
+
+// Add a SIP call's media as a participant: bidirectional RTP with
+// parameters the caller already negotiated. The caller does all the SIP
+// signalling (INVITE, BYE and so on). Codecs: PCMU (payload type 0, 8 kHz),
+// PCMA (8, 8 kHz) and Opus (96, 48 kHz).
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (an empty or malformed field, an
+// unsupported codec, a port or DTMF payload type out of range);
+// `CONFERENCE_NOT_FOUND`; `PARTICIPANT_ALREADY_EXISTS`;
+// `RTP_PORTS_EXHAUSTED`; `PARTICIPANT_LIMIT_REACHED`;
+// `PARTICIPANT_START_FAILED`; `LICENSE_REJECTED`, `LICENSE_DISCONNECTED`,
+// `LICENSE_EXPIRED` (the license starts nothing new); `INTERNAL`; and the
+// detector errors (`DetectorConfig`).
+message AddSipParticipantRequest {
+  // Required. The conference to join.
+  string conference_id = 1;
+  // Required. The new participant's id, chosen by the caller.
+  string participant_id = 2;
+  // Required. The address the peer receives RTP on (its SDP c= line): an
+  // IPv4 or IPv6 address, or a host name the server resolves.
+  string remote_ip = 3;
+  // Required. Port the peer receives RTP on (its SDP m= line), 1 to 65535.
+  // RTCP goes to the next port.
+  int32 remote_rtp_port = 4;
+  // Required. The codec's RTP payload format name (RFC 3551 and the IANA
+  // registry, as in the SDP a=rtpmap line): "PCMU", "PCMA" or "OPUS", in
+  // any case.
+  string codec = 5;
+  // RFC 4733 telephone-event payload type, usually 101; 0 turns RFC 4733
+  // DTMF off. Otherwise it must be in RFC 3551's dynamic range, 96 to 127.
+  int32 dtmf_payload_type = 6;
+  // SRTP keys, for an encrypted call; unset for plain RTP.
+  SrtpConfig srtp = 7;
+  // Detectors to run on the call's incoming audio.
+  DetectorConfig detectors = 8;
+}
+
+// The SIP participant was added and its media is running.
+message AddSipParticipantResponse {
+  // The participant's id, as requested.
+  string participant_id = 1;
+  // The UDP port synauson receives RTP on, for the SDP answer's m= line.
+  // RTCP is on `local_rtp_port` + 1.
+  int32 local_rtp_port = 2;
+}
+
+// SRTP keys (SDES, RFC 4568) for a SIP participant.
+message SrtpConfig {
+  // Crypto suite: "AES_CM_128_HMAC_SHA1_80", the only one supported.
+  string crypto_suite = 1;
+  // Required. The 30-byte SRTP master key that encrypts what synauson
+  // sends (its a=crypto).
+  bytes local_key = 2;
+  // Required. The peer's 30-byte SRTP master key, which decrypts what it
+  // sends (its a=crypto).
+  bytes remote_key = 3;
+}
+
+// The media a SIP peer negotiated in its SDP.
+message SipRemoteMedia {
+  // Required. The address the peer receives RTP on (its SDP c= line), as
+  // for `AddSipParticipantRequest.remote_ip`.
+  string remote_ip = 1;
+  // Required. Port the peer receives RTP on (its SDP m= line), 1 to 65535.
+  // RTCP goes to the next port.
+  int32 remote_rtp_port = 2;
+  // Required. The codec's RTP payload format name, as for
+  // `AddSipParticipantRequest.codec`.
+  string codec = 3;
+  // RFC 4733 telephone-event payload type; 0 turns RFC 4733 DTMF off,
+  // otherwise 96 to 127.
+  int32 dtmf_payload_type = 4;
+  // The peer's 30-byte SRTP master key (its a=crypto), which decrypts what
+  // it sends. Required exactly when the reservation carried
+  // `local_srtp_key`.
+  optional bytes remote_srtp_key = 5;
+}
+
+// Reserve a SIP participant's local RTP and RTCP ports before the peer's
+// media is known: the outbound call, whose SDP offer must carry our port
+// before the answer names the peer's. Both sockets are bound when this
+// returns, so media the peer sends early is queued, but nothing runs until
+// ConnectSipParticipant.
+//
+// A reservation is not a participant: `GetConference` leaves it out. It
+// does hold its id and a place under the participant cap.
+// `RemoveParticipant` or `TerminateConference` releases it. Write-only:
+// nothing reads a reservation back.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (a key not 30 bytes, an
+// unsupported suite); `CONFERENCE_NOT_FOUND`; `PARTICIPANT_ALREADY_EXISTS`
+// (the id is a participant or already reserved); `RTP_PORTS_EXHAUSTED`;
+// `PARTICIPANT_LIMIT_REACHED`.
+message ReserveSipParticipantRequest {
+  // Required. The conference to join.
+  string conference_id = 1;
+  // Required. The new participant's id, chosen by the caller.
+  string participant_id = 2;
+  // The 30-byte SRTP master key synauson encrypts with, advertised in the
+  // offer's a=crypto. Unset for plain RTP.
+  optional bytes local_srtp_key = 3;
+  // Crypto suite of `local_srtp_key`: empty or "AES_CM_128_HMAC_SHA1_80",
+  // the only suite supported.
+  string srtp_crypto_suite = 4;
+}
+
+// The ports are reserved.
+message ReserveSipParticipantResponse {
+  // The participant's id, as requested.
+  string participant_id = 1;
+  // Port for the SDP offer's m= line.
+  int32 local_rtp_port = 2;
+  // Always local_rtp_port + 1.
+  int32 local_rtcp_port = 3;
+}
+
+// Start a participant reserved by `ReserveSipParticipant`, once the peer's
+// SDP answer is in. From then on it behaves as one added with
+// `AddSipParticipant`, sending from the port it receives on (symmetric RTP,
+// RFC 4961). Invalid arguments leave the reservation in place; any other
+// failure releases it, and the caller must reserve again. It never fails on
+// the participant cap: the reservation already holds its place.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (no `remote`, an empty or
+// malformed field, an unsupported codec, a port or DTMF payload type out of
+// range, a key not 30 bytes, SRTP on one side only);
+// `CONFERENCE_NOT_FOUND`; `SIP_RESERVATION_NOT_FOUND`;
+// `PARTICIPANT_ALREADY_EXISTS` (the id is a running participant: a
+// reservation connects once); `PARTICIPANT_START_FAILED`; `INTERNAL`; and
+// the detector errors (`DetectorConfig`).
+message ConnectSipParticipantRequest {
+  // Required. The reservation's conference.
+  string conference_id = 1;
+  // Required. The reserved participant's id.
+  string participant_id = 2;
+  // Required. The media the peer's SDP answer negotiated.
+  SipRemoteMedia remote = 3;
+  // Detectors to run on the call's incoming audio.
+  DetectorConfig detectors = 4;
+}
+
+// The reserved participant is running.
+message ConnectSipParticipantResponse {
+  // The participant's id.
+  string participant_id = 1;
+  // The UDP port synauson receives RTP on, as reserved.
+  int32 local_rtp_port = 2;
+}
+
+// Send a DTMF digit to a SIP participant's peer: as RFC 4733
+// telephone-event packets when the participant has a DTMF payload type,
+// else as in-band audio tones.
+//
+// Errors: `INVALID_ID`, `INVALID_ARGUMENT` (an invalid digit),
+// `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (no SIP participant with
+// that id).
+message SendDtmfRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The SIP participant whose peer gets the digit.
+  string participant_id = 2;
+  // Required. One DTMF digit: "0" to "9", "*", "#", "A", "B", "C" or "D".
+  string digit = 3;
+  // How long the tone lasts, in ms (a duration); clamped to 70 to 500
+  // (ITU-T Q.24).
+  int32 duration_ms = 4;
+}
+
+// The digit was sent.
+message SendDtmfResponse {}
+
+// Subscribe to the DTMF digits a SIP participant's peer sends, from the
+// subscription on. Nothing is sent while no digit comes: the stream has no
+// heartbeat. A subscriber that falls behind gets `SUBSCRIBER_LAGGED` and
+// the stream ends: subscribe again.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (no
+// SIP participant with that id).
+message StreamDtmfEventsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The SIP participant to listen to.
+  string participant_id = 2;
+}
+
+// A DTMF digit the peer sent.
+message DtmfEvent {
+  // The SIP participant whose peer sent it.
+  string participant_id = 1;
+  // One digit: "0" to "9", "*", "#", "A" to "D".
+  string digit = 2;
+  // True when it was heard as an in-band tone in the audio; false when it
+  // came as an RFC 4733 telephone-event.
+  bool in_band = 4;
+}
+
+// Ask for a SIP participant's statistics.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (no
+// SIP participant with that id).
+message GetSipStatsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The SIP participant.
+  string participant_id = 2;
+}
+
+// A SIP participant's RTP receive statistics, named as RFC 3550 and the
+// W3C WebRTC statistics name them. All 0 until RTP arrives.
+message SipStats {
+  // The SIP participant.
+  string participant_id = 1;
+  // RTP packets received.
+  int64 packets_received = 2;
+  // RTP packets lost (RFC 3550's cumulative number of packets lost).
+  int64 packets_lost = 3;
+  // Average interarrival jitter (RFC 3550), in ns.
+  int64 avg_jitter_ns = 4;
+  // Distinct RTP streams (SSRCs) of audio received so far.
+  int32 active_ssrc_count = 6;
+}
+
+// A SIP participant's statistics.
+message GetSipStatsResponse {
+  // The statistics now.
+  SipStats stats = 1;
+}

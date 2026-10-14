@@ -1,0 +1,87 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "ConferenceProto";
+option java_package = "com.synauson.api.v1";
+
+// Start a conference.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_ALREADY_EXISTS`,
+// `CONFERENCE_LIMIT_REACHED` (the server's own cap),
+// `CONFERENCE_POOL_LIMIT_REACHED` (the license's conferences),
+// `LICENSE_REJECTED`, `LICENSE_DISCONNECTED`, `LICENSE_EXPIRED` (the
+// license starts nothing new), `SERVER_SHUTTING_DOWN`.
+message StartConferenceRequest {
+  // Required. The new conference's id, chosen by the caller.
+  string conference_id = 1;
+}
+
+// The conference started.
+message StartConferenceResponse {
+  // The conference's id, as requested.
+  string conference_id = 1;
+}
+
+// End a conference.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`.
+message TerminateConferenceRequest {
+  // Required. The conference to end.
+  string conference_id = 1;
+}
+
+// The conference ended: its participants are gone and its streams closed.
+message TerminateConferenceResponse {}
+
+// Ask for a conference.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`.
+message GetConferenceRequest {
+  // Required. The conference to describe.
+  string conference_id = 1;
+}
+
+// A conference. Mutes, routes and SIP reservations are write-only: this
+// response doesn't report them.
+message GetConferenceResponse {
+  // The conference's id.
+  string conference_id = 1;
+  // Its participants, in no particular order; at most the operator's
+  // participant cap, when one is set. A SIP reservation not yet connected
+  // is not a participant and is left out.
+  repeated ParticipantInfo participants = 2;
+  // When the conference started.
+  google.protobuf.Timestamp create_time = 3;
+}
+
+// What kind of participant it is. May gain values: accept ones you don't
+// know.
+enum ParticipantKind {
+  // Not set; never sent.
+  PARTICIPANT_KIND_UNSPECIFIED = 0;
+  // Plays an audio file (`AddFileParticipant`).
+  PARTICIPANT_KIND_FILE = 1;
+  // Records to a WAV file (`AddRecordingParticipant`).
+  PARTICIPANT_KIND_RECORDING = 2;
+  // A SIP call's media (`AddSipParticipant`, `ConnectSipParticipant`).
+  PARTICIPANT_KIND_SIP = 3;
+  // A WebRTC peer (`AddWebRtcParticipant`).
+  PARTICIPANT_KIND_WEBRTC = 4;
+}
+
+// One participant of a conference.
+message ParticipantInfo {
+  // The participant's id.
+  string participant_id = 1;
+  // What kind of participant it is.
+  ParticipantKind kind = 2;
+}

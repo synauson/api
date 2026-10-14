@@ -1,0 +1,230 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "synauson/v1/detector.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "WebrtcProto";
+option java_package = "com.synauson.api.v1";
+
+// Add a WebRTC peer (a browser, say) as a bidirectional participant. The
+// peer is the offerer: the caller relays its SDP offer here and forwards
+// synauson's answer back. Audio is Opus only; DTLS-SRTP, ICE and RTCP are
+// handled by synauson. Exchange ICE candidates with AddWebRtcIceCandidate
+// and StreamWebRtcIceCandidates.
+//
+// Errors: `INVALID_ID`; `INVALID_ARGUMENT` (an invalid option, an
+// `sdp_offer` that is empty, isn't SDP, doesn't offer exactly one audio
+// media section, or can't be answered; no message or metadata contains
+// TURN credentials or the SDP);
+// `CONFERENCE_NOT_FOUND`; `PARTICIPANT_ALREADY_EXISTS`;
+// `PARTICIPANT_LIMIT_REACHED`; `LICENSE_REJECTED`, `LICENSE_DISCONNECTED`,
+// `LICENSE_EXPIRED` (the license starts nothing new); `INTERNAL`; and the
+// detector errors (`DetectorConfig`).
+message AddWebRtcParticipantRequest {
+  // Required. The conference to join.
+  string conference_id = 1;
+  // Required. The new participant's id, chosen by the caller.
+  string participant_id = 2;
+  // Required. The peer's SDP offer (from createOffer and
+  // setLocalDescription in a browser).
+  string sdp_offer = 3;
+  // Detectors to run on the peer's audio.
+  DetectorConfig detectors = 4;
+  // Per-participant options. Anything left unset uses the server's
+  // defaults, then the built-in defaults documented per field.
+  WebRtcOptions options = 5;
+}
+
+// Which ICE candidates a participant may use. May gain values: accept ones
+// you don't know in `WebRtcEffectiveOptions`.
+enum WebRtcIceTransportPolicy {
+  // Unset: inherit (the built-in default is ALL).
+  WEB_RTC_ICE_TRANSPORT_POLICY_UNSPECIFIED = 0;
+  // Host, server-reflexive and relayed candidates.
+  WEB_RTC_ICE_TRANSPORT_POLICY_ALL = 1;
+  // Relayed (TURN) candidates only; synauson's own addresses are never
+  // sent to the peer, and STUN is skipped. Needs at least one TURN server.
+  WEB_RTC_ICE_TRANSPORT_POLICY_RELAY = 2;
+}
+
+// WebRTC options for one participant. Every field is optional; an unset
+// field inherits the server default. Invalid values fail
+// AddWebRtcParticipant with INVALID_ARGUMENT.
+message WebRtcOptions {
+  // stun://host[:port] (the browser form stun:host is refused). An empty
+  // string turns STUN off for this participant. Default: the server's
+  // --webrtc-stun-server, which is off unless the operator sets one.
+  optional string stun_server = 1;
+  // turn(s)://user:password@host[:port][?transport=udp|tcp]. Percent-encode
+  // any of : @ / ? # in the user or password. At most 8 relays; turn://
+  // without a transport counts as two. Default: none.
+  repeated string turn_servers = 2;
+  // Which ICE candidates to use. Default: ALL.
+  WebRtcIceTransportPolicy ice_transport_policy = 3;
+  // Lowest local port for the participant's ICE candidates, 1 to 65535; set
+  // both or neither. Default: the server's range, else any port. Each
+  // concurrent participant needs a port per local address (one for UDP and
+  // one for ICE-TCP), so size the range for the load.
+  optional int32 ice_port_min = 4;
+  // Highest local port for the participant's ICE candidates; see
+  // ice_port_min.
+  optional int32 ice_port_max = 5;
+  // Receive jitter buffer latency in ms (a duration), 0 to 2000. Default:
+  // the server's (200). Every mix of this participant's audio waits for it,
+  // so the others hear it late by the same amount.
+  optional int32 jitter_buffer_ms = 6;
+  // Bitrate of the Opus audio synauson sends, in bits per second, 4000 to
+  // 650000. Default 64000.
+  optional int32 opus_bitrate_bps = 7;
+  // Opus discontinuous transmission for the audio synauson sends: tiny
+  // packets during silence. Default true.
+  optional bool opus_dtx = 8;
+  // Opus in-band forward error correction for the audio synauson sends.
+  // Default false.
+  optional bool opus_inband_fec = 9;
+  // Expected packet loss, 0 to 100, which sizes the in-band FEC. Default 10
+  // when opus_inband_fec is on, else 0 (FEC adds nothing at 0).
+  optional int32 opus_packet_loss_percentage = 10;
+}
+
+// The options a live participant runs with. The ICE port range, jitter
+// buffer and Opus fields are read back from its live media; the STUN, TURN
+// and policy fields are the resolved values synauson applied.
+message WebRtcEffectiveOptions {
+  // The STUN server; empty when STUN is off.
+  string stun_server = 1;
+  // The TURN servers, credentials redacted: turn://***@host:port.
+  repeated string turn_servers = 2;
+  // The ICE transport policy in force.
+  WebRtcIceTransportPolicy ice_transport_policy = 3;
+  // Lowest local ICE port; unset when the ICE agent may pick any port.
+  optional int32 ice_port_min = 4;
+  // Highest local ICE port; unset when the ICE agent may pick any port.
+  optional int32 ice_port_max = 5;
+  // Receive jitter buffer latency in ms (a duration), from the live jitter
+  // buffer once RTP has arrived.
+  int32 jitter_buffer_ms = 6;
+  // Bitrate of the Opus audio synauson sends, in bits per second.
+  int32 opus_bitrate_bps = 7;
+  // Whether Opus discontinuous transmission is on.
+  bool opus_dtx = 8;
+  // Whether Opus in-band forward error correction is on.
+  bool opus_inband_fec = 9;
+  // The expected packet loss the FEC is sized for, 0 to 100.
+  int32 opus_packet_loss_percentage = 10;
+}
+
+// The WebRTC participant was added.
+message AddWebRtcParticipantResponse {
+  // The participant's id, as requested.
+  string participant_id = 1;
+  // Synauson's SDP answer, already applied on synauson's side. Forward it
+  // to the peer (setRemoteDescription in a browser).
+  string sdp_answer = 2;
+}
+
+// Pass one of the peer's ICE candidates to synauson (trickle ICE): call it
+// for each candidate the peer finds (a browser's icecandidate event).
+//
+// Errors: `INVALID_ID`, `INVALID_ARGUMENT` (an empty `candidate`),
+// `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`.
+message AddWebRtcIceCandidateRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The WebRTC participant the candidate is for.
+  string participant_id = 2;
+  // Required. The candidate's a=candidate:... line.
+  string candidate = 3;
+  // The index of the SDP media section it belongs to.
+  int32 sdp_mline_index = 4;
+}
+
+// The candidate was added.
+message AddWebRtcIceCandidateResponse {}
+
+// Subscribe to synauson's ICE candidates for a WebRTC participant: those
+// found before the subscription, then new ones as they are found. Forward
+// each to the peer (addIceCandidate in a browser). The stream sends nothing
+// between candidates (no heartbeat) and stays open after
+// `end_of_candidates` until the participant goes. A subscriber that falls
+// behind gets `SUBSCRIBER_LAGGED` and the stream ends: subscribe again.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (no
+// WebRTC participant with that id).
+message StreamWebRtcIceCandidatesRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The WebRTC participant whose candidates to stream.
+  string participant_id = 2;
+}
+
+// One of synauson's ICE candidates, or the end of them.
+message WebRtcIceCandidate {
+  // The WebRTC participant it is for.
+  string participant_id = 1;
+  // The candidate's a=candidate:... line; empty with end_of_candidates.
+  string candidate = 2;
+  // The index of the SDP media section it belongs to.
+  int32 sdp_mline_index = 3;
+  // True when ICE gathering is complete; candidate is then empty.
+  bool end_of_candidates = 4;
+}
+
+// Ask for a WebRTC participant's statistics.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND` (no
+// WebRTC participant with that id).
+message GetWebRtcStatsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The WebRTC participant.
+  string participant_id = 2;
+}
+
+// A WebRTC participant's connection state, its RTP counters and the
+// options it runs with. The counters come from the WebRTC statistics: a
+// counter it can't report yet is 0.
+message WebRtcStats {
+  // The WebRTC participant.
+  string participant_id = 1;
+  // The ICE connection state, as WebRTC names it (RTCIceConnectionState):
+  // "new", "checking", "connected", "completed", "failed", "disconnected"
+  // or "closed". Others may be added.
+  string ice_connection_state = 2;
+  // The peer connection state, combining ICE and DTLS, as WebRTC names it
+  // (RTCPeerConnectionState): "new", "connecting", "connected",
+  // "disconnected", "failed" or "closed". Others may be added.
+  string connection_state = 3;
+  // RTP packets received, over every stream the peer sends.
+  int64 packets_received = 4;
+  // RTP packets lost, as the receive jitter buffer counts them.
+  int64 packets_lost = 5;
+  // RTP packets synauson sent. With nothing routed to the participant,
+  // synauson may send none, so this stays 0 until a route carries audio.
+  int64 packets_sent = 6;
+  // Bytes of RTP received.
+  int64 bytes_received = 7;
+  // Bytes of RTP sent.
+  int64 bytes_sent = 8;
+  // The largest receive interarrival jitter of the streams the peer sends,
+  // in ns (`SipStats.avg_jitter_ns` is an average).
+  int64 max_jitter_ns = 9;
+  // Round-trip time in ms (a duration), once the peer's first RTCP receiver
+  // report has arrived; 0 before, and under 0.5 ms rounds to 0.
+  int64 rtt_ms = 10;
+  // The options the participant runs with.
+  WebRtcEffectiveOptions effective_options = 11;
+}
+
+// A WebRTC participant's statistics.
+message GetWebRtcStatsResponse {
+  // The statistics now.
+  WebRtcStats stats = 1;
+}

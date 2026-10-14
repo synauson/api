@@ -1,0 +1,250 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "EventsProto";
+option java_package = "com.synauson.api.v1";
+
+// Subscribe to file playback events. Every event goes to every subscriber;
+// a subscriber that doesn't take an event within 100 ms is dropped without
+// affecting the others: its stream ends with `SUBSCRIBER_LAGGED`, so
+// subscribe again. The stream ends when the conference is terminated, and
+// sends nothing between events (no heartbeat).
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`.
+message StreamFileEventsRequest {
+  // Required. The conference.
+  string conference_id = 1;
+  // The file participant whose events to stream; empty for every file
+  // participant of the conference.
+  string participant_id = 2;
+}
+
+// Subscribe to a participant's voice activity events. Events sent before
+// the subscription are not replayed, so subscribe before the audio you need
+// starts. The stream sends nothing between events (no heartbeat), and ends
+// when the participant or its conference goes. A subscriber that falls
+// behind gets `SUBSCRIBER_LAGGED` and the stream ends: subscribe again.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
+// `VAD_REQUIRED`.
+message StreamVadEventsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose events to stream.
+  string participant_id = 2;
+}
+
+// Subscribe to a participant's turn detection decisions, delivered as
+// `StreamVadEventsRequest` describes.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
+// `TURN_DETECTION_REQUIRED`.
+message StreamTurnDetectionEventsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose decisions to stream.
+  string participant_id = 2;
+}
+
+// Subscribe to a participant's transcript, delivered as
+// `StreamVadEventsRequest` describes.
+//
+// Errors: `INVALID_ID`, `CONFERENCE_NOT_FOUND`, `PARTICIPANT_NOT_FOUND`,
+// `STT_REQUIRED`.
+message StreamTranscriptEventsRequest {
+  // Required. The participant's conference.
+  string conference_id = 1;
+  // Required. The participant whose transcript to stream.
+  string participant_id = 2;
+}
+
+// One file playback event. Fields 1 to 9 are the envelope; the oneof's
+// cases take 10 and up.
+message FileEvent {
+  // The participant's conference.
+  string conference_id = 1;
+  // The file participant the event is about.
+  string participant_id = 2;
+  // Wall-clock time the event was made.
+  google.protobuf.Timestamp event_time = 3;
+  // What happened. Clients must ignore cases they don't know.
+  oneof event {
+    // A file started playing: the participant's own file when it was added,
+    // or a priority file (`AddPriorityAudioFiles`).
+    FilePlaybackStarted playback_started = 10;
+    // A priority file finished playing.
+    FilePlaybackEnded playback_ended = 11;
+    // The participant's own file reached its end (never with
+    // `loop_playback`).
+    FileEos eos = 12;
+    // A file can't be played.
+    FileError error = 13;
+  }
+}
+
+// A file started playing.
+message FilePlaybackStarted {
+  // The file's URI.
+  string uri = 1;
+}
+
+// A priority file finished playing.
+message FilePlaybackEnded {
+  // The file's URI.
+  string uri = 1;
+}
+
+// The participant's own file reached its end.
+message FileEos {}
+
+// A file can't be played: no audio could be decoded from it when it was
+// added (the add fails too), its decoder failed while it played, or a
+// priority file can't be opened or decoded (it is skipped).
+message FileError {
+  // What went wrong, for people.
+  string message = 1;
+}
+
+// One voice activity event. Fields 1 to 9 are the envelope; the oneof's
+// cases take 10 and up.
+message VadEvent {
+  // The participant's conference.
+  string conference_id = 1;
+  // The participant the event is about.
+  string participant_id = 2;
+  // Wall-clock time the event was made.
+  google.protobuf.Timestamp event_time = 3;
+  // What happened. Clients must ignore cases they don't know.
+  oneof event {
+    // Speech started.
+    VadSpeechStart speech_start = 10;
+    // Speech ended.
+    VadSpeechEnd speech_end = 11;
+  }
+}
+
+// Speech started: the speech probability stayed at or above
+// `VadConfig.threshold` for `VadConfig.min_speech_ms`.
+message VadSpeechStart {
+  // The detector's probability for the window that confirmed it.
+  float confidence = 1;
+}
+
+// Speech ended: the probability stayed below the threshold for
+// `VadConfig.min_silence_ms`.
+message VadSpeechEnd {
+  // The length of the speech that ended, from its onset to where the
+  // silence began, in ms (a duration).
+  int64 duration_ms = 1;
+}
+
+// One turn detection decision, made at a speech end: whether the
+// participant finished their turn there. Fields 1 to 9 are the envelope;
+// the decision takes 10 and up.
+message TurnDetectionEvent {
+  // The participant's conference.
+  string conference_id = 1;
+  // The participant the decision is about.
+  string participant_id = 2;
+  // Wall-clock time the decision was made.
+  google.protobuf.Timestamp event_time = 3;
+  // The model's probability that the turn is complete, in [0, 1].
+  float probability = 10;
+  // Whether `probability` reached the participant's end of turn threshold
+  // (`TurnConfig.end_of_turn_threshold`, so `UpdateTurnConfig` changes it
+  // too).
+  bool turn_complete = 11;
+}
+
+// A participant's transcript: committed text as it is decoded, and each
+// turn's text once its turn ends. Its times are transcription audio time:
+// ms of the participant's audio since transcription started on it, silence
+// included. That is not the agent stream's conference time; the agent
+// stream's words carry conference time. Fields 1 to 9 are the envelope;
+// the oneof's cases take 10 and up.
+message TranscriptEvent {
+  // The participant's conference.
+  string conference_id = 1;
+  // The participant the transcript is of.
+  string participant_id = 2;
+  // Wall-clock time the event was made.
+  google.protobuf.Timestamp event_time = 3;
+  // What happened. Clients must ignore cases they don't know.
+  oneof event {
+    // Newly committed text.
+    TranscriptDelta delta = 10;
+    // A turn's text.
+    TurnTranscript turn = 11;
+  }
+}
+
+// Newly committed text, never revised: a participant's deltas concatenate
+// to its transcript. A growing backlog means the machine can't keep up.
+message TranscriptDelta {
+  // Word-initial pieces start with a space. Empty when only tentative
+  // changed.
+  string text = 1;
+  // The model's current guess at what follows, replacing any earlier one.
+  // Always empty from models that don't revise.
+  string tentative = 2;
+  // Where the first piece of `text` starts, in transcription audio time.
+  int64 start_ms = 3;
+  // Where the last piece of `text` starts, in transcription audio time.
+  int64 last_start_ms = 4;
+  // Audio transcribed so far, in transcription audio time.
+  int64 decoded_ms = 5;
+  // Audio waiting to be transcribed (a duration): how far the transcript
+  // runs behind.
+  int64 backlog_ms = 6;
+}
+
+// One turn's text: one per turn the participant's agent stream ends (a
+// complete turn detection decision, the end-of-turn timeout or
+// ForceEndTurn), sent after the deltas it covers. Each piece of committed
+// text is in at most one turn, in order, and every committed word reaches
+// one.
+//
+// The model commits a word some time after it is spoken, so a turn is cut
+// where the speech is: its text is the committed text up to where the next
+// speech started, never splitting a word. Synauson waits up to
+// `SttConfig.turn_drain_ms` after the turn's end for that text to settle. A
+// turn's text never starts with punctuation (the end of the sentence
+// before, which the model commits with the turn's first word), so turns
+// may end without a period.
+//
+// A turn closed early (the turn flush) may end with forecast words, sent
+// before their deltas; if the transcription then commits other words in
+// their place, those open the next turn. Words no turn end took (a lagging
+// turn's late words with no speech after them, or what is left at the
+// audio's end or the participant's removal) get a turn of their own.
+message TurnTranscript {
+  // The turn's text, with a leading space.
+  string text = 1;
+  // Where the turn's first piece starts, in transcription audio time; 0
+  // when `text` is empty.
+  int64 start_ms = 2;
+  // Where the turn's last piece starts, in transcription audio time; 0
+  // when `text` is empty.
+  int64 last_start_ms = 3;
+  // Where turn detection said the turn ended, in transcription audio time;
+  // for a turn of late words, where the turn before it ended.
+  int64 turn_end_ms = 4;
+  // Turn detection's probability for the decision, when the turn ended on
+  // one (unset for a timeout, `ForceEndTurn`, or a turn of late words with
+  // no turn before it).
+  optional float probability = 5;
+  // False when the transcription hadn't reached the turn's end within
+  // `SttConfig.turn_drain_ms` (or the participant left): its last words
+  // open the next turn instead, or a turn of their own if no speech
+  // comes before they are transcribed.
+  bool complete = 6;
+}

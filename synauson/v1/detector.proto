@@ -1,0 +1,123 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "synauson/v1/agent.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "DetectorProto";
+option java_package = "com.synauson.api.v1";
+
+// The voice-agent features to run on a participant's incoming audio, set
+// when it is added. Each may be omitted. They form a chain, `vad` <-
+// `turn_detection` <- `stt` (and `turn_detection` <- `tts`), and each needs
+// the one below it on the same participant; a participant missing one
+// fails with `INVALID_ARGUMENT` naming both fields. Synauson never adds one
+// for you.
+//
+// Licensing follows the same chain: an entitlement includes everything
+// below it. A participant with any of them takes one concurrent AI session
+// from the license's pool, whatever it runs.
+//
+// Adding a participant with detectors can fail with these reasons, beyond
+// the add's own:
+//
+// `INVALID_ARGUMENT`: a detector without the one it needs, an unknown
+// `tts.voice`, a value out of range; `INVALID_TURN_CONFIG` for `turns`.
+//
+// `FEATURE_NOT_LICENSED`: the license doesn't grant one of them.
+//
+// `MODEL_LOADING`: a model, or the speech-to-text or text-to-speech pool,
+// is still downloading or loading (licensed models download in the
+// background after a start); retry shortly. Adds never wait.
+//
+// `MODEL_UNAVAILABLE`, `ONNX_RUNTIME_UNAVAILABLE`: a model or the runtime
+// can't run until the operator fixes it.
+//
+// `SESSION_LIMIT_REACHED`, `STT_CAPACITY_REACHED`: the license's concurrent
+// AI sessions (beyond its burst), or this machine's speech-to-text streams,
+// are in use.
+message DetectorConfig {
+  // Voice activity detection: when the participant speaks.
+  VadConfig vad = 1;
+  // Turn detection: at each speech end, whether the participant finished
+  // their turn. Needs `vad` on the same participant, whose speech ends it
+  // decides on. Gives the participant an agent stream
+  // (`StreamAgentEvents`).
+  TurnDetectionConfig turn_detection = 2;
+  // Streaming speech-to-text (`StreamTranscriptEvents`, and words on the
+  // agent stream). Needs `turn_detection` on the same participant, whose
+  // turn ends close each `TurnTranscript`. Counts against this machine's
+  // speech-to-text capacity.
+  SttConfig stt = 3;
+  // The agent stream's turn config at the start, over its defaults
+  // (`end_of_turn_threshold` from `turn_detection.confidence_threshold`,
+  // timeout 5000 ms, eager off with `eager_threshold` 0); the same fields
+  // and ranges as `UpdateTurnConfig`. Needs `turn_detection`. Its
+  // `end_of_turn_threshold` replaces `turn_detection.confidence_threshold`.
+  TurnConfigUpdate turns = 4;
+  // A speaker: text-to-speech into the call (`Speak`, `CancelUtterance`).
+  // Needs `turn_detection` on the same participant: its events go on the
+  // agent stream. Licensed by FEATURE_TTS.
+  TtsConfig tts = 5;
+}
+
+// A participant's speaker.
+message TtsConfig {
+  // The default voice: "en-us-f1" to "en-us-f11" or "en-us-m1" to
+  // "en-us-m9" ("en-us-f1" when unset). An unknown one fails the add with
+  // `INVALID_ARGUMENT`.
+  optional string voice = 1;
+  // The default speaking rate, 0.25 to 4 (1 when unset).
+  optional float speed = 2;
+  // The speaker's id as a routing source, for `SetAudioRoutes` (to a
+  // recording, say); `participant_id` + ".speaker" when unset, so a
+  // participant id over 120 characters needs one (the add fails with
+  // `INVALID_ID` otherwise). An id (see `Syn`) that must not be another
+  // participant's. The speaker plays to its
+  // own participant without a route (a file participant has no output, so
+  // its speaker plays only where it is routed); a route from it to its own
+  // participant is refused.
+  optional string speaker_id = 3;
+}
+
+// Voice activity detection settings.
+message VadConfig {
+  // Speech probability, in (0, 1), at or above which audio counts as
+  // speech; 0.5 when unset. Speech ends when the probability stays below
+  // `threshold` - 0.15 for `min_silence_ms`.
+  optional float threshold = 1;
+  // Silence, in ms (a duration, 0 to 10000), before the speech counts as
+  // ended; 300 when unset. Turn detection decides at each speech end, so
+  // this sets how soon it can.
+  optional int32 min_silence_ms = 2;
+  // Speech, in ms (a duration, 0 to 10000), before it counts as started;
+  // 100 when unset.
+  optional int32 min_speech_ms = 3;
+}
+
+// Turn detection settings.
+message TurnDetectionConfig {
+  // Audio (16 kHz samples) the participant must have sent before turn
+  // detection decides: 0 means the model's minimum (4000, 250 ms), smaller
+  // values are raised to it, and more than 128000 (the model's 8 s window)
+  // or below 0 is `INVALID_ARGUMENT`.
+  int32 buffered_samples = 1;
+  // The probability, in [0, 1], at or above which a pause ends the turn;
+  // 0.5 when unset, and 0 ends the turn at every pause.
+  // `DetectorConfig.turns.end_of_turn_threshold` replaces it when set.
+  optional float confidence_threshold = 2;
+}
+
+// Speech-to-text settings.
+message SttConfig {
+  // How long a turn's transcript waits, after the turn ends, for the
+  // transcription to settle the turn's text: 0 to 10000 ms of wall time,
+  // 1000 when unset. A turn that runs out closes with `complete` false.
+  optional int32 turn_drain_ms = 1;
+}

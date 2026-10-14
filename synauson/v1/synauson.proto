@@ -1,0 +1,151 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "synauson/v1/agent.proto";
+import "synauson/v1/capabilities.proto";
+import "synauson/v1/conference.proto";
+import "synauson/v1/events.proto";
+import "synauson/v1/participant.proto";
+import "synauson/v1/sip.proto";
+import "synauson/v1/webrtc.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "SynausonProto";
+option java_package = "com.synauson.api.v1";
+
+// The synauson media engine: conferences of participants (SIP, WebRTC, audio
+// files and recordings), the audio routes between them, and the voice-agent
+// features on each participant (voice activity, turn detection,
+// speech-to-text and text-to-speech).
+//
+// Ids are chosen by the caller: 1 to 128 characters from `A-Z`, `a-z`,
+// `0-9`, `.`, `_` and `-`. Any other id fails with INVALID_ARGUMENT, reason
+// `INVALID_ID`. A participant id is unique within its conference.
+//
+// Every error carries a `google.rpc.ErrorInfo` in the status details, with
+// domain "synauson.com", an UPPER_SNAKE_CASE reason and string metadata
+// whose keys are lowerCamelCase; `ErrorReason` lists the reasons. Match on
+// the reason, never on the status code or the message: the gRPC library
+// itself returns RESOURCE_EXHAUSTED, OUT_OF_RANGE, UNAVAILABLE and
+// CANCELLED without an `ErrorInfo`, and messages may be reworded in any
+// release.
+//
+// Enums and oneofs in responses and events may gain values in later
+// releases: clients must accept values and cases they don't know. Requests
+// with an enum value the server doesn't know fail with INVALID_ARGUMENT.
+//
+// Every instance also serves `SynAdmin`, for the operator, and
+// `grpc.health.v1.Health`.
+service Syn {
+  // Starts an empty conference under the caller's id. Not retry-safe: a
+  // retry after a lost reply fails with `CONFERENCE_ALREADY_EXISTS`, which
+  // then means the first call succeeded.
+  rpc StartConference(StartConferenceRequest) returns (StartConferenceResponse);
+  // Ends a conference: removes every participant, ends every event stream
+  // on it, and frees its resources. A retry after a lost reply fails with
+  // `CONFERENCE_NOT_FOUND`.
+  rpc TerminateConference(TerminateConferenceRequest) returns (TerminateConferenceResponse);
+  // Returns a conference's participants and when it started.
+  rpc GetConference(GetConferenceRequest) returns (GetConferenceResponse);
+  // Returns the server and API versions, the license, its limits and
+  // current usage, the models' state, and this machine's speech-to-text
+  // and text-to-speech capacity.
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
+
+  // Adds a participant that plays an audio file into the conference. Not
+  // retry-safe: a retry after a lost reply fails with
+  // `PARTICIPANT_ALREADY_EXISTS`; `GetConference` confirms the add.
+  rpc AddFileParticipant(AddFileParticipantRequest) returns (AddFileParticipantResponse);
+  // Adds a participant that records another participant's audio, and
+  // whatever is routed to it, to a WAV file. Not retry-safe, as
+  // `AddFileParticipant`.
+  rpc AddRecordingParticipant(AddRecordingParticipantRequest) returns (AddRecordingParticipantResponse);
+  // Removes a participant, or releases a SIP reservation. Its routes and
+  // event streams end with it. A retry after a lost reply fails with
+  // `PARTICIPANT_NOT_FOUND`.
+  rpc RemoveParticipant(RemoveParticipantRequest) returns (RemoveParticipantResponse);
+
+  // Mutes or unmutes everything a participant sends to the others.
+  // Retry-safe: it sets the mute, so repeating it changes nothing.
+  rpc MuteParticipant(MuteParticipantRequest) returns (MuteParticipantResponse);
+  // Replaces the conference's whole routing matrix: who hears whom.
+  // Retry-safe: the same matrix sent again changes nothing.
+  rpc SetAudioRoutes(SetAudioRoutesRequest) returns (SetAudioRoutesResponse);
+
+  // Queues audio files to play on a file participant ahead of its own
+  // file. Not retry-safe: a retry queues the files again.
+  rpc AddPriorityAudioFiles(AddPriorityAudioFilesRequest) returns (AddPriorityAudioFilesResponse);
+
+  // Streams a file participant's playback events (or every file
+  // participant's, with an empty `participant_id`), from the subscription
+  // on.
+  rpc StreamFileEvents(StreamFileEventsRequest) returns (stream FileEvent);
+  // Streams a participant's voice activity events. Needs
+  // `DetectorConfig.vad` on the participant.
+  rpc StreamVadEvents(StreamVadEventsRequest) returns (stream VadEvent);
+  // Streams a participant's turn detection decisions. Needs
+  // `DetectorConfig.turn_detection` on the participant.
+  rpc StreamTurnDetectionEvents(StreamTurnDetectionEventsRequest) returns (stream TurnDetectionEvent);
+  // Streams a participant's transcript. Needs `DetectorConfig.stt` on the
+  // participant.
+  rpc StreamTranscriptEvents(StreamTranscriptEventsRequest) returns (stream TranscriptEvent);
+  // Streams a participant's voice-agent events: speech, turns, words and
+  // playback, in one ordered stream that can be resumed. Needs
+  // `DetectorConfig.turn_detection` on the participant.
+  rpc StreamAgentEvents(StreamAgentEventsRequest) returns (stream AgentEvent);
+  // Ends the participant's open turn now (reason MANUAL). Not retry-safe: a
+  // retry may end the turn that started after the first call.
+  rpc ForceEndTurn(ForceEndTurnRequest) returns (ForceEndTurnResponse);
+  // Changes how the participant's turns end and returns the config in
+  // effect. Retry-safe: the same update sent again changes nothing.
+  rpc UpdateTurnConfig(UpdateTurnConfigRequest) returns (UpdateTurnConfigResponse);
+  // Starts or continues an utterance on the participant's speaker. Needs
+  // `DetectorConfig.tts` on the participant. Not retry-safe: a retried
+  // Speak whose first call reached the speaker speaks its text twice.
+  rpc Speak(SpeakRequest) returns (SpeakResponse);
+  // Stops an utterance (or every interruptible one) now. Retry-safe: an
+  // utterance already stopped is not stopped again.
+  rpc CancelUtterance(CancelUtteranceRequest) returns (CancelUtteranceResponse);
+
+  // Adds a SIP call's media as a participant, once both sides' media are
+  // known. Synauson handles RTP only; the caller does the SIP signalling.
+  // Not retry-safe, as `AddFileParticipant`.
+  rpc AddSipParticipant(AddSipParticipantRequest) returns (AddSipParticipantResponse);
+  // Sends a DTMF digit to a SIP participant's peer. Not retry-safe: a retry
+  // sends the digit again.
+  rpc SendDtmf(SendDtmfRequest) returns (SendDtmfResponse);
+  // Streams the DTMF digits a SIP participant's peer sends, from the
+  // subscription on.
+  rpc StreamDtmfEvents(StreamDtmfEventsRequest) returns (stream DtmfEvent);
+  // Returns a SIP participant's RTP receive statistics.
+  rpc GetSipStats(GetSipStatsRequest) returns (GetSipStatsResponse);
+  // Reserves the local ports for an outbound call's SDP offer, the first
+  // step of a two-phase add; `ConnectSipParticipant` is the second. Not
+  // retry-safe: a retry fails with `PARTICIPANT_ALREADY_EXISTS`.
+  rpc ReserveSipParticipant(ReserveSipParticipantRequest) returns (ReserveSipParticipantResponse);
+  // Starts a participant reserved by `ReserveSipParticipant`, with the
+  // media the peer's SDP answer negotiated. Not retry-safe: a retry fails
+  // with `PARTICIPANT_ALREADY_EXISTS`.
+  rpc ConnectSipParticipant(ConnectSipParticipantRequest) returns (ConnectSipParticipantResponse);
+
+  // Adds a WebRTC peer (a browser, say) as a participant: sends its SDP
+  // offer, returns synauson's answer. Not retry-safe: a retry fails with
+  // `PARTICIPANT_ALREADY_EXISTS` and the answer is lost, so remove the
+  // participant and add it again.
+  rpc AddWebRtcParticipant(AddWebRtcParticipantRequest) returns (AddWebRtcParticipantResponse);
+  // Passes one of the peer's ICE candidates to synauson (trickle ICE).
+  // Retry-safe: a candidate added twice is used once.
+  rpc AddWebRtcIceCandidate(AddWebRtcIceCandidateRequest) returns (AddWebRtcIceCandidateResponse);
+  // Streams synauson's own ICE candidates for the peer: those found before
+  // the subscription, then new ones as they are found.
+  rpc StreamWebRtcIceCandidates(StreamWebRtcIceCandidatesRequest) returns (stream WebRtcIceCandidate);
+  // Returns a WebRTC participant's connection state and the options it
+  // runs with.
+  rpc GetWebRtcStats(GetWebRtcStatsRequest) returns (GetWebRtcStatsResponse);
+}

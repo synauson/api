@@ -1,0 +1,528 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "CapabilitiesProto";
+option java_package = "com.synauson.api.v1";
+
+// Ask what this instance may use.
+message GetCapabilitiesRequest {}
+
+// What this synauson instance is and may use right now, and how much is in
+// use.
+//
+// Enums and the string fields documented with a list of values may gain
+// values in later releases: clients must accept values they don't know.
+message GetCapabilitiesResponse {
+  // The server's release, as semantic versioning ("1.8.0").
+  string server_version = 14;
+  // The release of this API (the synauson/api tag, as "1.0.0") the server
+  // implements. A client built from a newer release may find RPCs that
+  // fail with UNIMPLEMENTED and fields the server never sets.
+  string api_version = 15;
+  // The license in force and its standing.
+  LicenseInfo license = 1;
+  // What the license's limits count over.
+  LimitsScope limits_scope = 2;
+  // Fraction above the purchased part of each limit (sessions and
+  // conferences alike) still admitted as a burst, reported as overage.
+  double overdraft = 3;
+  // Each capability a license can grant, and whether new work may use it.
+  repeated CapabilityInfo capabilities = 6;
+  // Each model the license entitles, or could, and its state on this
+  // instance.
+  repeated ModelInfo models = 7;
+  // The ONNX Runtime library every model runs on.
+  OnnxRuntimeInfo onnx_runtime = 8;
+  // This machine's speech-to-text capacity and its pool.
+  SttCapacityInfo stt = 9;
+  // The license's pool of concurrent AI sessions: participants using any
+  // AI capability, one session each.
+  PoolUsage sessions = 10;
+  // What this instance may use, detected at startup: its CPU budget,
+  // cores, CPU features and memory limit, with their sources.
+  ResourcesInfo resources = 11;
+  // The calibration cache (model timings kept in the state directory across
+  // restarts) and the voice activity and turn detection timings in force.
+  // Speech-to-text's are in stt.
+  CalibrationInfo calibration = 12;
+  // This machine's text-to-speech pool and its cap on speaking utterances.
+  TtsCapacityInfo tts = 13;
+  // This instance's standing with the usage service: its share of each of
+  // the license's pools and the time it has left to reconnect.
+  UsageServiceInfo usage_service = 16;
+  // The license's pool of concurrent conferences: every conference, with
+  // or without AI, from its start until it ends. Both pools apply: a
+  // conference takes one conference, and each participant in it using AI
+  // takes one AI session too.
+  PoolUsage conferences = 17;
+}
+
+// What a license's limits count over. May gain values: accept ones
+// you don't know.
+enum LimitsScope {
+  // Not set; never sent.
+  LIMITS_SCOPE_UNSPECIFIED = 0;
+  // All instances of the license, at every site: each reports to the usage
+  // service, which leases it a share of each pool (usage_service).
+  LIMITS_SCOPE_LICENSE = 1;
+  // This instance alone: an air-gapped license, which sends no reports.
+  LIMITS_SCOPE_INSTANCE = 2;
+}
+
+// This instance's contact with the usage service. May gain values: accept
+// ones you don't know.
+enum UsageContact {
+  // Not set; never sent.
+  USAGE_CONTACT_UNSPECIFIED = 0;
+  // A share leased within the last 10 minutes.
+  USAGE_CONTACT_LEASED = 1;
+  // Reports are not getting through: the last share and its burst hold
+  // until grace_end_time.
+  USAGE_CONTACT_UNREPORTED = 2;
+  // 7 days without contact: no new conference or participant starts until
+  // a report gets through.
+  USAGE_CONTACT_LAPSED = 3;
+  // An air-gapped license, arranged with Synauson, which sends no reports.
+  USAGE_CONTACT_AIR_GAPPED = 4;
+}
+
+// The usage service (usage.synauson.com) as this instance sees it. Every
+// instance reports its AI session and conference counts there every 30
+// seconds and is leased a share of each of the license's two pools. While reports can't get
+// through, the instance keeps admitting against the last share it held,
+// with its burst, for 7 days after the last report that got through;
+// calls in progress are never stopped.
+message UsageServiceInfo {
+  // Its contact with the service.
+  UsageContact contact = 1;
+  // The last contact the 7 days count from: the newest report the service
+  // accepted, moved forward while Synauson's own outage notice is up.
+  // Unset for an air-gapped license.
+  google.protobuf.Timestamp last_contact_time = 2;
+  // When new calls stop unless a report gets through first. Unset for an
+  // air-gapped license.
+  google.protobuf.Timestamp grace_end_time = 3;
+  // This instance's share of the license's sessions, while leased; absent
+  // when unlimited or not leased.
+  optional int32 share = 4;
+  // The most sessions this instance may hold: its share plus the burst on
+  // the purchased part of it (the Free base has none).
+  optional int32 share_ceiling = 5;
+  // Sessions in use across all the license's instances at the last report.
+  optional int32 pool_in_use = 6;
+  // Instances holding a share at the last report.
+  optional int32 instances = 7;
+  // Since when Synauson's signed notice says the usage service itself is
+  // down: the 7 days are paused until it is cleared. Unset otherwise.
+  google.protobuf.Timestamp pause_time = 8;
+  // Since when the usage service refuses this license's reports (the
+  // licensing server refused it): the 7 days run from no later than this.
+  // Unset otherwise.
+  google.protobuf.Timestamp refuse_time = 9;
+  // Why the last report failed.
+  optional string problem = 10;
+  // This instance's share of the license's conferences, while leased;
+  // absent when unlimited or not leased. An instance that holds no share,
+  // leased or kept from its last lease, starts no conference, unless the
+  // conference pool is unlimited or the license air-gapped.
+  optional int32 conference_share = 11;
+  // The most conferences this instance may hold: its share plus the burst
+  // on the purchased part of it (the Free base has none).
+  optional int32 conference_share_ceiling = 12;
+  // Conferences in use across all the license's instances at the last
+  // report.
+  optional int32 conference_pool_in_use = 13;
+}
+
+// Where a value came from. May gain values: accept ones you don't know.
+enum ValueSource {
+  // Not set; never sent.
+  VALUE_SOURCE_UNSPECIFIED = 0;
+  // Detected or measured on this start.
+  VALUE_SOURCE_AUTO = 1;
+  // Measured on an earlier start and read from the calibration cache.
+  VALUE_SOURCE_CACHED = 2;
+  // Set by the operator.
+  VALUE_SOURCE_OVERRIDE = 3;
+}
+
+// The state of a model pool (speech-to-text or text-to-speech). May gain
+// values: accept ones you don't know.
+enum PoolState {
+  // Not set; never sent.
+  POOL_STATE_UNSPECIFIED = 0;
+  // Not started: no license or model yet; `detail` says which.
+  POOL_STATE_IDLE = 1;
+  // Calibrating and loading the workers' models. Participants that need
+  // the pool are refused with `MODEL_LOADING` until it is ready.
+  POOL_STATE_LOADING = 2;
+  // Running.
+  POOL_STATE_READY = 3;
+  // Failed to start; the next participant that needs it tries again.
+  POOL_STATE_FAILED = 4;
+}
+
+// The calibration cache and the detector timings in force.
+message CalibrationInfo {
+  // The cache file in the state directory; absent when the server runs
+  // without one.
+  optional string file = 1;
+  // Whether this start ignores the cached timings (the operator asked to
+  // recalibrate).
+  bool recalibrate = 2;
+  // One voice activity chunk (32 ms of audio), once timed.
+  DetectorTiming vad = 3;
+  // One turn detection decision, once timed.
+  DetectorTiming turn_detection = 4;
+}
+
+// How long one detector run takes on this machine.
+message DetectorTiming {
+  // The model timed, by its catalog id.
+  string model = 1;
+  // The inference threads it ran on.
+  int32 threads = 2;
+  // How long one run took, in ms (a duration).
+  double run_ms = 3;
+  // AUTO (measured on this start) or CACHED (on an earlier one, read from
+  // the calibration cache).
+  ValueSource source = 4;
+}
+
+// What this instance may use, detected at startup.
+message ResourcesInfo {
+  // Cores this instance may use, fractional with a CPU quota: the smallest
+  // of the control group's CPU quota (its own and its ancestors'), its CPU
+  // set, the process's CPU affinity, a Windows job's hard CPU cap and the
+  // CPU count, or the operator's override.
+  double cpu_budget = 1;
+  // AUTO (detected) or OVERRIDE (set by the operator).
+  ValueSource cpu_source = 2;
+  // What set the budget: "cpu_max" (a control group CPU quota), "cpuset",
+  // "affinity", "job_cpu_rate" (a Windows job object's CPU cap),
+  // "std_parallelism" (the CPU count) or "override". Others may be added.
+  string limited_by = 3;
+  // Whole cores the model pools size by: the budget rounded down, at least 1.
+  int32 cores = 4;
+  // Logical CPUs this instance may run on.
+  int32 logical_cpus = 5;
+  // Physical cores among the CPUs this instance may run on, where known.
+  optional int32 physical_cores = 6;
+  // Performance CPUs on a hybrid processor; absent with one core type.
+  optional int32 performance_cpus = 7;
+  // The processor's model name.
+  string cpu_model = 8;
+  // The instruction set extensions the inference kernels are picked by:
+  // "avx2", "avx512f", "avx512vnni", "avxvnni", "amx_tile", "amx_int8"; on
+  // ARM64 "dotprod", "i8mm", "bf16". Others may be added.
+  repeated string cpu_flags = 9;
+  // The memory limit (the control group's, a Windows job's, or the
+  // operator's override), in bytes; absent with none.
+  optional int64 memory_limit_bytes = 10;
+  // AUTO (detected) or OVERRIDE (set by the operator).
+  ValueSource memory_source = 11;
+}
+
+// A license's standing. May gain values: accept ones you don't know.
+// Calls in progress continue in every state.
+enum LicenseState {
+  // Not set; never sent.
+  LICENSE_STATE_UNSPECIFIED = 0;
+  // In force.
+  LICENSE_STATE_VALID = 1;
+  // In force, with full function, and within 14 days of expiry.
+  LICENSE_STATE_EXPIRING = 2;
+  // Usage reports have not reached usage.synauson.com for an hour or more.
+  // Full function until 7 days after the last one that did, paused while
+  // Synauson's own outage notice is up (usage_service says when).
+  LICENSE_STATE_OFFLINE = 3;
+  // Expired. A Free or paid license runs on the Free plan: every AI
+  // feature in the Free pools (`PoolUsage.base`), with no burst. A
+  // developer license starts nothing new until Synauson renews it
+  // (`LICENSE_EXPIRED`).
+  LICENSE_STATE_EXPIRED = 4;
+  // 7 days without a report reaching usage.synauson.com: no new conference
+  // or participant starts until one does (`LICENSE_DISCONNECTED`).
+  LICENSE_STATE_DISCONNECTED = 5;
+  // A renewal brought a license that is illegal or can't be verified; the
+  // last valid one stays in force.
+  LICENSE_STATE_INVALID_KEPT_LAST_VALID = 6;
+  // The license was rejected: nothing new starts (`LICENSE_REJECTED`).
+  LICENSE_STATE_REJECTED = 7;
+}
+
+// Where the license file in use came from. May gain values: accept ones you
+// don't know.
+enum LicenseSource {
+  // Not set; never sent.
+  LICENSE_SOURCE_UNSPECIFIED = 0;
+  // Checked out from the licensing service by this process.
+  LICENSE_SOURCE_SERVER = 1;
+  // The copy kept from an earlier check-out.
+  LICENSE_SOURCE_CACHE = 2;
+  // A file the operator provided.
+  LICENSE_SOURCE_PROVIDED = 3;
+}
+
+// The license in force and its standing.
+message LicenseInfo {
+  // Field 8 was v1.7.1's string `plan` ("all" or "none"), retired before the
+  // first synauson/api release; `plan` is now field 11.
+  reserved 8;
+
+  // The standing.
+  LicenseState state = 1;
+  // One line describing the license and its state, for people.
+  string description = 2;
+  // The license's id, when there is a license.
+  optional string license_id = 3;
+  // The license's name, for people, when it has one.
+  optional string display_name = 4;
+  // Where the license file came from, when there is one; absent when no
+  // license file is in force (rejected). Unlike `plan`, this field has no
+  // value in some states, so it keeps presence; LICENSE_SOURCE_UNSPECIFIED
+  // is still never sent.
+  optional LicenseSource source = 5;
+  // When the license file in use stops being valid offline.
+  google.protobuf.Timestamp file_expire_time = 6;
+  // The license's own expiry, if it has one.
+  google.protobuf.Timestamp license_expire_time = 7;
+  // Whole days until the license expires, or (while
+  // LICENSE_STATE_OFFLINE) until new calls stop without contact.
+  optional int32 days_remaining = 9;
+  // What needs attention: a refused renewal, a failing license check, or
+  // why new work is refused.
+  optional string problem = 10;
+  // The plan the license is on now; always set. FREE once a Free or paid
+  // license expires; still DEVELOPER once a developer license expires; the
+  // license's own plan while it is disconnected (`state` says nothing new
+  // starts); UNLICENSED when no license is in force (rejected).
+  LicensePlan plan = 11;
+}
+
+// The plan a license is on. May gain values: accept ones you don't know.
+enum LicensePlan {
+  // Not set; never sent.
+  LICENSE_PLAN_UNSPECIFIED = 0;
+  // The Free plan: the Free base of concurrent AI sessions and of
+  // concurrent conferences (`PoolUsage.base`), with every AI feature and
+  // no burst.
+  LICENSE_PLAN_FREE = 1;
+  // A paid plan: sessions or conferences bought on top of the Free base,
+  // or unlimited.
+  LICENSE_PLAN_PAID = 2;
+  // A developer license, for development and testing only, not for
+  // production use: the Free plan's pools for one year. At expiry it
+  // starts nothing new until Synauson renews it (`LICENSE_EXPIRED`).
+  LICENSE_PLAN_DEVELOPER = 3;
+  // No license in force: the licensing service rejected it, so nothing new
+  // starts (`LICENSE_REJECTED`).
+  LICENSE_PLAN_UNLICENSED = 4;
+}
+
+// How close a license pool's units in use are to its limit. May gain
+// values: accept ones you don't know.
+enum PoolLevel {
+  // Not set; never sent.
+  POOL_LEVEL_UNSPECIFIED = 0;
+  // Below 80% of the limit, or no limit.
+  POOL_LEVEL_OK = 1;
+  // From 80% of the limit.
+  POOL_LEVEL_NEAR_LIMIT = 2;
+  // Above the limit, within the overdraft.
+  POOL_LEVEL_OVERAGE = 3;
+  // At the ceiling: new units are refused, sessions with
+  // `SESSION_LIMIT_REACHED` and conferences with
+  // `CONFERENCE_POOL_LIMIT_REACHED`.
+  POOL_LEVEL_FULL = 4;
+}
+
+// One of the license's pools (concurrent AI sessions or concurrent
+// conferences), and this instance's use of it. A participant using any AI
+// capability takes one session, whatever it uses; a conference takes one
+// conference, whether or not it uses AI. Running sessions and conferences
+// are never stopped; a new one past the limit and its burst is refused
+// (`SESSION_LIMIT_REACHED`, `CONFERENCE_POOL_LIMIT_REACHED`).
+message PoolUsage {
+  // The Free base plus the purchased units; absent means unlimited.
+  optional int32 limit = 1;
+  // Units in use now on this instance.
+  int32 in_use = 2;
+  // The most admitted at once: the base plus the purchased units and their
+  // overdraft (the burst applies to purchased units only); absent when
+  // unlimited.
+  optional int32 ceiling = 3;
+  // How close the units in use are to the limit.
+  PoolLevel level = 4;
+  // The most units at once since the server started, for true-up.
+  int32 peak = 5;
+  // When the peak was first reached; unset before the first unit.
+  google.protobuf.Timestamp peak_time = 6;
+  // The Free base every license has in this pool, with no burst (the Free
+  // plan's sessions, with every AI feature, or its conferences); 0 while the
+  // license starts nothing new.
+  int32 base = 7;
+  // Units bought on top of the base; absent means unlimited.
+  optional int32 purchased = 8;
+}
+
+// A capped count and how much of it is in use.
+message Usage {
+  // The cap; absent means unlimited.
+  optional int32 limit = 1;
+  // How many are in use now.
+  int32 in_use = 2;
+}
+
+// One capability a license can grant.
+message CapabilityInfo {
+  // Its entitlement code: FEATURE_VAD, FEATURE_TURN_DETECTION, FEATURE_STT
+  // or FEATURE_TTS. Others may be added.
+  string code = 1;
+  // Whether new work may use it: every license grants every capability, so
+  // false only while the license starts nothing new.
+  bool entitled = 2;
+  // The entitlement code that grants it when the license doesn't name it
+  // itself. Absent when named directly or not entitled.
+  optional string included_by = 4;
+}
+
+// A model's state on this instance. May gain values: accept ones you don't
+// know.
+enum ModelState {
+  // Not set; never sent.
+  MODEL_STATE_UNSPECIFIED = 0;
+  // In the model store, verified and usable.
+  MODEL_STATE_READY = 1;
+  // Downloading, by this process or another sharing the model store.
+  MODEL_STATE_DOWNLOADING = 2;
+  // Not in the model store.
+  MODEL_STATE_MISSING = 3;
+  // In the model store but failing verification.
+  MODEL_STATE_INVALID = 4;
+  // The license doesn't entitle it.
+  MODEL_STATE_NOT_ENTITLED = 5;
+}
+
+// One model and its state on this instance. Licensed models download in
+// the background, so a model can be missing for a while after a start.
+message ModelInfo {
+  // The model's catalog id.
+  string id = 1;
+  // The model's variant: the build or quantization the server picked for
+  // this machine ("cpu", "int8", "fp32"), which is also its directory in
+  // the model store. A machine of another kind may get another variant of
+  // the same model. Others may be added.
+  string variant = 2;
+  // The model's version: its release, as the catalog numbers it.
+  string release = 3;
+  // Its state. A failed download stays MISSING or INVALID, with the error
+  // and the retry time in `detail`.
+  ModelState state = 4;
+  // Why it is in that state, when it isn't ready.
+  optional string detail = 5;
+}
+
+// Whether the ONNX Runtime library loaded. May gain values: accept ones
+// you don't know.
+enum OnnxRuntimeState {
+  // Not set; never sent.
+  ONNX_RUNTIME_STATE_UNSPECIFIED = 0;
+  // Loaded; models can run.
+  ONNX_RUNTIME_STATE_LOADED = 1;
+  // Not loaded: `detail` says why. Participants that need a model are
+  // refused with `ONNX_RUNTIME_UNAVAILABLE`.
+  ONNX_RUNTIME_STATE_UNAVAILABLE = 2;
+}
+
+// The ONNX Runtime library the server loaded; every model runs on it.
+message OnnxRuntimeInfo {
+  // Whether the library loaded.
+  OnnxRuntimeState state = 1;
+  // The loaded library's version.
+  optional string version = 2;
+  // The file it was loaded from, when the platform reports it.
+  optional string path = 3;
+  // The release synauson ships and tests. Another version runs, but model
+  // speed and outputs can differ.
+  string shipped_version = 4;
+  // Why it is unavailable, or another ONNX Runtime library loaded in the
+  // process.
+  optional string detail = 5;
+}
+
+// How many speech-to-text streams this machine transcribes in real time,
+// and the pool that does it: measured when the pool starts (a timed decode,
+// and the private memory each worker's model adds), or set by the operator.
+// Each speech-to-text participant also takes a license session.
+message SttCapacityInfo {
+  // The pool's state; participants with `stt` need it READY.
+  PoolState state = 1;
+  // Decoding workers in the pool, once known.
+  optional int32 workers = 2;
+  // Inference threads each worker uses, once known.
+  optional int32 threads_per_worker = 3;
+  // One stream's decode time over audio time, when measured.
+  optional double real_time_factor = 4;
+  // The stream cap (once known) and the streams in use.
+  Usage streams = 5;
+  // Why it is idle, or failed.
+  optional string detail = 6;
+  // Private memory each worker's model adds, in bytes, when measured
+  // (Linux). Model weights shared through the model store are paid once,
+  // not per worker, and are not counted here: they are shared_model_bytes.
+  optional int64 model_bytes = 8;
+  // What set the worker count: "cpu", "memory" or "operator". Others may be
+  // added.
+  optional string limited_by = 9;
+  // Whether turns close early on forecasts of their last words (the turn
+  // flush, set by the operator).
+  bool turn_flush = 10;
+  // Decoding the stream cap reserves per stream for forecasts (the turn
+  // flush's and eager end of turn's, at most one per pause), as a share of
+  // the stream's own: 0 when both are off or the model can't forecast;
+  // absent when not calibrated.
+  optional double forecast_reserve = 11;
+  // Memory of the model weights shared through the model store, in bytes,
+  // when measured (Linux): paid once by every worker and every instance on
+  // the host using the same store, so the pool's model memory is about
+  // workers x model_bytes + shared_model_bytes. 0 when the weights load
+  // privately into each worker.
+  optional int64 shared_model_bytes = 12;
+  // Where the capacity came from: AUTO (timed on this start), CACHED (every
+  // timing read from the calibration cache) or OVERRIDE (all set by the
+  // operator); absent until the capacity is known. It keeps presence for
+  // that state; VALUE_SOURCE_UNSPECIFIED is still never sent.
+  optional ValueSource source = 13;
+  // Whether participants with stt may turn eager end of turn on: the
+  // operator allowed it, and the stream cap reserves decoding for its
+  // forecasts. With the turn flush on they may anyway: its reserve covers
+  // them.
+  bool eager = 14;
+}
+
+// The text-to-speech pool and its cap on utterances synthesising at once,
+// from the cores by a fixed rule or set by the operator. A speaker holds a
+// place only while it speaks; a participant with tts also takes a license
+// session.
+message TtsCapacityInfo {
+  // The pool's state; participants with `tts` need it READY.
+  PoolState state = 1;
+  // Synthesis workers in the pool, once known.
+  optional int32 workers = 2;
+  // Inference threads each worker uses, once known.
+  optional int32 threads_per_worker = 3;
+  // The cap on utterances synthesising at once, and how many are.
+  Usage streams = 4;
+  // Why it is idle, or failed.
+  optional string detail = 5;
+}

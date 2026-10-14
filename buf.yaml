@@ -1,0 +1,23 @@
+version: v2
+lint:
+  use:
+    - STANDARD
+    # Every service, RPC, message, field, enum and value has a comment: the
+    # comments are the published API reference.
+    - COMMENTS
+  except:
+    # The services are `Syn` and `SynAdmin`, not `SynService` and
+    # `SynAdminService`: the package already says what they are, as gRPC's own
+    # examples (Greeter, RouteGuide, Health) do.
+    - SERVICE_SUFFIX
+    # The streaming RPCs return their domain events (`stream AgentEvent`), as
+    # gRPC's examples do (`stream Feature`), not `StreamAgentEventsResponse`.
+    - RPC_RESPONSE_STANDARD_NAME
+  ignore_only:
+    # ErrorReason's values are the reason strings ErrorInfo carries, so they
+    # can't take the enum's prefix (google/api/error_reason.proto does the same).
+    ENUM_VALUE_PREFIX:
+      - synauson/v1/errors.proto
+breaking:
+  use:
+    - FILE

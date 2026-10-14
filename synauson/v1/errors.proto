@@ -1,0 +1,238 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "ErrorsProto";
+option java_package = "com.synauson.api.v1";
+
+// Every error reason synauson sends, for reference: no message carries this
+// enum. A reason travels as a string, the value's name: in the
+// `google.rpc.ErrorInfo` every failed call's status carries (domain
+// "synauson.com"), or in `AgentError.reason` on the agent stream. Each
+// value's comment gives the status code, the metadata keys (lowerCamelCase,
+// string values) and an example.
+//
+// For example, `GetConference` with an unknown id fails with NOT_FOUND and
+// the details hold:
+//
+//     {"@type": "type.googleapis.com/google.rpc.ErrorInfo",
+//      "reason": "CONFERENCE_NOT_FOUND", "domain": "synauson.com",
+//      "metadata": {"conferenceId": "call-42"}}
+//
+// Match on the reason, never on the status code or the message. A reason
+// keeps its status code and its metadata keys. Later releases may add
+// reasons and metadata keys: handle a reason you don't know by its status
+// code.
+enum ErrorReason {
+  // Not a reason; never sent.
+  ERROR_REASON_UNSPECIFIED = 0;
+
+  // A field of the request is invalid: empty when it is required, out of
+  // range, malformed or unsupported. Status INVALID_ARGUMENT; when
+  // synauson can name the one field at fault, metadata `field` holds its
+  // path (`options.ice_port_min`, say) and a `google.rpc.BadRequest` field
+  // violation names it too.
+  INVALID_ARGUMENT = 1;
+  // An id is empty, longer than 128 characters or has a character outside
+  // `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`. Status INVALID_ARGUMENT;
+  // metadata `field` (`participant_id`, say), with a BadRequest field
+  // violation.
+  INVALID_ID = 2;
+  // `UpdateTurnConfig` or `DetectorConfig.turns`: a value is out of range,
+  // or eager end of turn isn't allowed; the config is unchanged. Status
+  // INVALID_ARGUMENT.
+  INVALID_TURN_CONFIG = 3;
+  // `Speak`: a request the speaker can't take (text over its cap, voice or
+  // speed after the first Speak, an unknown voice, a speed out of range,
+  // more than 64 utterances held, playing or queued). Status
+  // INVALID_ARGUMENT; metadata
+  // `utteranceId`.
+  INVALID_SPEAK = 4;
+
+  // No conference has the id. Status NOT_FOUND; metadata `conferenceId`
+  // ("call-42").
+  CONFERENCE_NOT_FOUND = 20;
+  // The conference has no participant with the id, or none of the kind the
+  // call needs (a SIP call for `GetSipStats`, say). Status NOT_FOUND;
+  // metadata `conferenceId`, `participantId`.
+  PARTICIPANT_NOT_FOUND = 21;
+  // `ConnectSipParticipant`: the id has no reservation. Status NOT_FOUND;
+  // metadata `conferenceId`, `participantId`.
+  SIP_RESERVATION_NOT_FOUND = 22;
+  // A `file:` URI names a file that doesn't exist. Status NOT_FOUND;
+  // metadata `uri` (its first 512 characters).
+  FILE_NOT_FOUND = 23;
+  // `CancelUtterance`: an id the speaker never had. Status NOT_FOUND;
+  // metadata `utteranceId`.
+  UNKNOWN_UTTERANCE = 24;
+
+  // `StartConference`: the id is in use. Status ALREADY_EXISTS; metadata
+  // `conferenceId`.
+  CONFERENCE_ALREADY_EXISTS = 30;
+  // The id is a participant, a SIP reservation or a speaker id in the
+  // conference already. Status ALREADY_EXISTS; metadata `conferenceId`,
+  // `participantId`.
+  PARTICIPANT_ALREADY_EXISTS = 31;
+
+  // `StartConference`: the server runs as many conferences as its operator
+  // allows; end one or use another instance. The operator's own cap on
+  // this server, not the license's (that is
+  // `CONFERENCE_POOL_LIMIT_REACHED`). Status RESOURCE_EXHAUSTED; metadata
+  // `limit` ("100").
+  CONFERENCE_LIMIT_REACHED = 40;
+  // The conference has as many participants and SIP reservations as the
+  // operator allows. Status RESOURCE_EXHAUSTED; metadata `conferenceId`,
+  // `limit`.
+  PARTICIPANT_LIMIT_REACHED = 41;
+  // No local RTP port pair is free for a SIP participant. Status
+  // RESOURCE_EXHAUSTED; metadata `portMin`, `portMax` (the operator's RTP
+  // port range).
+  RTP_PORTS_EXHAUSTED = 42;
+  // The license's concurrent AI sessions, with its burst, are in use; end a
+  // session or raise the license. (No share of the pool leased yet is
+  // `LICENSE_SHARE_PENDING`.) Status RESOURCE_EXHAUSTED; metadata `inUse`,
+  // `limit`, `ceiling` (the most with the burst), `scope` (what the limit
+  // counts over: "all instances of this license", or "this instance" for an
+  // air-gapped license) and `license` (one line describing the license).
+  SESSION_LIMIT_REACHED = 43;
+  // This machine's speech-to-text streams are all in use. Status
+  // RESOURCE_EXHAUSTED; metadata `inUse`, `limit`.
+  STT_CAPACITY_REACHED = 44;
+  // A file, voice activity, turn detection, transcript, DTMF or ICE
+  // candidate stream's subscriber fell behind and was dropped; the events it
+  // missed are gone, so subscribe again. Status RESOURCE_EXHAUSTED;
+  // metadata `skippedEvents`.
+  SUBSCRIBER_LAGGED = 45;
+  // `StreamAgentEvents`: the subscriber fell behind and was dropped. Status
+  // RESOURCE_EXHAUSTED; metadata `lastSeq`, the last event it got: resume
+  // from it.
+  AGENT_SUBSCRIBER_LAGGED = 46;
+  // `StartConference`: the license's concurrent conferences, with its
+  // burst, are in use; end a conference or raise the license. Every live
+  // conference counts, with AI or without. (No share of the pool leased yet
+  // is `LICENSE_SHARE_PENDING`.) Status RESOURCE_EXHAUSTED; metadata
+  // `inUse`, `limit`, `ceiling` (the most with the burst), `scope` (what
+  // the limit counts over: "all instances of this license", or "this
+  // instance" for an air-gapped license) and `license` (one line describing
+  // the license).
+  CONFERENCE_POOL_LIMIT_REACHED = 47;
+
+  // The license was rejected: nothing new starts until the operator fixes
+  // it. Status FAILED_PRECONDITION; metadata `license` (one line describing
+  // the license and its problem).
+  LICENSE_REJECTED = 60;
+  // A model the participant needs is missing, fails verification, failed to
+  // download or failed to load, or the operator turned its pool off; the
+  // operator must fix it. Status FAILED_PRECONDITION; metadata `model` (its
+  // catalog id, or `stt` or `tts` for a pool).
+  MODEL_UNAVAILABLE = 61;
+  // The ONNX Runtime library isn't loaded, so no model can run. Status
+  // FAILED_PRECONDITION.
+  ONNX_RUNTIME_UNAVAILABLE = 62;
+  // `StreamVadEvents`: the participant has no `DetectorConfig.vad`. Status
+  // FAILED_PRECONDITION; metadata `conferenceId`, `participantId`.
+  VAD_REQUIRED = 63;
+  // The participant has no `DetectorConfig.turn_detection`, so no turn
+  // detection events and no agent stream. Status FAILED_PRECONDITION;
+  // metadata `conferenceId`, `participantId`.
+  TURN_DETECTION_REQUIRED = 64;
+  // `StreamTranscriptEvents`: the participant has no `DetectorConfig.stt`.
+  // Status FAILED_PRECONDITION; metadata `conferenceId`, `participantId`.
+  STT_REQUIRED = 65;
+  // `Speak`, `CancelUtterance`: the participant has no speaker (no
+  // `DetectorConfig.tts`). Status FAILED_PRECONDITION; metadata
+  // `conferenceId`, `participantId`.
+  TTS_REQUIRED = 66;
+  // `AddPriorityAudioFiles`: the participant isn't a file participant.
+  // Status FAILED_PRECONDITION; metadata `conferenceId`, `participantId`.
+  FILE_PARTICIPANT_REQUIRED = 67;
+  // A route or a recording names a SIP reservation that isn't connected
+  // yet. Status FAILED_PRECONDITION; metadata `conferenceId`,
+  // `participantId`.
+  SIP_RESERVATION_NOT_CONNECTED = 68;
+  // A new participant's media didn't start in time (no audio decoded from a
+  // file, SIP media that didn't start, a WebRTC peer that didn't connect);
+  // it was not added. Status FAILED_PRECONDITION; metadata
+  // `participantId`.
+  PARTICIPANT_START_FAILED = 69;
+  // `StreamAgentEvents`: the cursor's `stream_id` is not the participant's
+  // current stream (it was added again). Status FAILED_PRECONDITION;
+  // metadata `streamId`, the current one.
+  AGENT_STREAM_MISMATCH = 70;
+  // `Speak`: the utterance was ended, or has finished, been interrupted or
+  // failed; utterance ids are not reused. Status FAILED_PRECONDITION;
+  // metadata `utteranceId`.
+  UTTERANCE_ENDED = 71;
+  // `CancelUtterance`: the utterance was spoken with `interruptible`
+  // false. Status FAILED_PRECONDITION; metadata `utteranceId`.
+  UTTERANCE_NOT_INTERRUPTIBLE = 72;
+  // No usage report has reached usage.synauson.com for 7 days, so nothing
+  // new starts until one does; calls in progress continue. Status
+  // FAILED_PRECONDITION; metadata `license` (one line describing the
+  // license and its standing).
+  LICENSE_DISCONNECTED = 73;
+  // The license expired and starts nothing new until Synauson renews it;
+  // calls in progress continue. Today only a developer license does this:
+  // an expired Free or paid license runs on the Free plan instead. Status
+  // FAILED_PRECONDITION; metadata `license` (one line describing the
+  // license and its standing).
+  LICENSE_EXPIRED = 74;
+
+  // `StreamAgentEvents`: the `after_seq` cursor is older than the oldest
+  // event the stream keeps; subscribe again without a cursor. Status
+  // OUT_OF_RANGE; metadata `oldestSeq`, `lastSeq`, `streamId`.
+  AGENT_REPLAY_EXPIRED = 80;
+
+  // The license doesn't entitle a model the participant's features need.
+  // Every license grants every feature, so this is `LICENSE_REJECTED`,
+  // `LICENSE_DISCONNECTED` or `LICENSE_EXPIRED` caught later, when the
+  // license changed while the participant was being added. Status
+  // PERMISSION_DENIED; metadata `model`, the model's catalog id.
+  FEATURE_NOT_LICENSED = 90;
+
+  // A model the participant needs, or the speech-to-text or text-to-speech
+  // pool, is still downloading or loading; retry in a few seconds
+  // (`GetCapabilities` shows the state). Status UNAVAILABLE; metadata
+  // `model` (its catalog id, or `stt` or `tts` for a pool).
+  MODEL_LOADING = 100;
+  // The server is shutting down and starts nothing new; use another
+  // instance. Status UNAVAILABLE.
+  SERVER_SHUTTING_DOWN = 101;
+  // This instance holds no usable share of one of the license's pools yet
+  // (none leased since it started, or the only share it holds was leased
+  // under the license's earlier terms), so it starts nothing from that pool
+  // until usage.synauson.com leases it one: retry later, or use another
+  // instance. Not a full pool (`SESSION_LIMIT_REACHED`,
+  // `CONFERENCE_POOL_LIMIT_REACHED`). Status UNAVAILABLE; metadata `pool`
+  // ("sessions" or "conferences"), `scope` (what the pool counts over) and
+  // `license` (one line describing the license and why it has no share).
+  LICENSE_SHARE_PENDING = 102;
+
+  // The call has no `authorization: Bearer <token>` metadata, or the
+  // token is wrong. Status UNAUTHENTICATED.
+  INVALID_TOKEN = 110;
+
+  // A failure inside synauson, not caused by the request. Status INTERNAL.
+  INTERNAL = 120;
+
+  // `AgentError`: turn detection stopped on the participant; turns end only
+  // by timeout or `ForceEndTurn` from then on.
+  TURN_DETECTION_FAILED = 200;
+  // `AgentError`: a speech end got no turn detection decision within 2 s;
+  // the timeout still ends the turn.
+  TURN_DECISION_MISSING = 201;
+  // `AgentError`: speech-to-text failed on the participant; turns end with
+  // the words they had, and later ones without words.
+  STT_STOPPED = 202;
+  // `AgentError`: the transcription's backlog passed the participant's
+  // `SttConfig.turn_drain_ms` (at least 500 ms); metadata `backlogMs`,
+  // `thresholdMs`. Sent again only after the backlog falls to half the
+  // threshold.
+  STT_LAGGING = 203;
+}

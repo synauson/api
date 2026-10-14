@@ -1,0 +1,113 @@
+// Copyright 2026 Synauson
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package synauson.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Synauson.V1";
+option go_package = "github.com/synauson/api/gen/go/synauson/v1;synausonv1";
+option java_multiple_files = true;
+option java_outer_classname = "AdminProto";
+option java_package = "com.synauson.api.v1";
+
+// Operating the server: what it uses, and stopping it. Served on the same
+// address and behind the same authentication as `Syn`; give these calls
+// to the operator's tools, not to agents. Errors carry an `ErrorInfo`, as
+// `Syn` describes.
+service SynAdmin {
+  // Terminates every conference, then stops the server. Returns at once;
+  // the drain runs in the background. From the call on, health reports
+  // NOT_SERVING and new conferences fail with `SERVER_SHUTTING_DOWN`.
+  // Retry-safe: a second call while the drain runs changes nothing.
+  rpc ShutdownServer(ShutdownServerRequest) returns (ShutdownServerResponse);
+  // Returns the server's memory, threads and conferences now, for
+  // monitoring.
+  rpc GetResourceSnapshot(GetResourceSnapshotRequest) returns (GetResourceSnapshotResponse);
+}
+
+// Stop the server.
+message ShutdownServerRequest {
+  // How long to wait for the conferences to terminate before the server
+  // stops anyway, in seconds; at least 1 (smaller values count as 1).
+  int32 grace_period_seconds = 1;
+}
+
+// The shutdown started; the server stops serving once it completes.
+message ShutdownServerResponse {}
+
+// Ask for a resource snapshot.
+message GetResourceSnapshotRequest {}
+
+// A resource snapshot.
+message GetResourceSnapshotResponse {
+  // What the server uses now.
+  ResourceSnapshot snapshot = 1;
+}
+
+// What the server uses at one moment.
+message ResourceSnapshot {
+  // When it was taken.
+  google.protobuf.Timestamp capture_time = 1;
+  // The server process's memory and threads.
+  ProcessMemory process_memory = 2;
+  // The server's own thread pools.
+  RuntimeStats runtime_stats = 3;
+  // The memory limit and usage of the control group the server runs in.
+  CgroupMemory cgroup_memory = 4;
+  // Each running conference, in no particular order; at most the
+  // operator's conference cap, when one is set.
+  repeated ConferenceInfo conferences = 5;
+}
+
+// The server process's memory and threads, where the platform reports
+// them (Linux); on other platforms both fields are unset.
+message ProcessMemory {
+  // Resident memory (VmRSS), in bytes.
+  optional int64 vmrss_bytes = 1;
+  // Threads in the process.
+  optional int32 threads = 2;
+}
+
+// The server's own thread pools.
+message RuntimeStats {
+  // Threads that run the server's request handling and conference tasks.
+  int32 worker_threads = 1;
+  // Threads in the pool for blocking work, which grows and shrinks on
+  // demand.
+  int32 blocking_threads = 2;
+}
+
+// Which control group interface the server read its memory from.
+enum CgroupVersion {
+  // Not set; never sent.
+  CGROUP_VERSION_UNSPECIFIED = 0;
+  // Control groups v2 (the unified hierarchy).
+  CGROUP_VERSION_V2 = 1;
+  // Control groups v1.
+  CGROUP_VERSION_V1 = 2;
+  // Neither is readable, or the platform has no control groups; the
+  // memory fields are absent.
+  CGROUP_VERSION_NONE = 3;
+}
+
+// The memory limit and usage of the server's control group (Linux).
+message CgroupMemory {
+  // The smallest memory limit on the control group or any ancestor, in
+  // bytes; absent when there is none.
+  optional int64 limit_bytes = 1;
+  // Memory the control group uses now, in bytes; absent when unreadable.
+  optional int64 used_bytes = 2;
+  // The interface read. May gain values: accept ones you don't know.
+  CgroupVersion version = 3;
+}
+
+// One running conference.
+message ConferenceInfo {
+  // The conference's id.
+  string conference_id = 1;
+  // How many participants it has.
+  int32 participant_count = 2;
+}
